@@ -98,9 +98,10 @@ enum SoundDirectorService {
                 guard let block = CMSampleBufferGetDataBuffer(buffer) else { continue }
                 let bytes = CMBlockBufferGetDataLength(block)
                 guard bytes >= 2 else { continue }
-                var pcm = [Int16](repeating: 0, count: bytes / 2)
+                let sampleCount = bytes / 2
+                var pcm = [Int16](repeating: 0, count: sampleCount)
                 let status = pcm.withUnsafeMutableBytes { raw in
-                    CMBlockBufferCopyDataBytes(block, atOffset: 0, dataLength: pcm.count * 2, destination: raw.baseAddress!)
+                    CMBlockBufferCopyDataBytes(block, atOffset: 0, dataLength: sampleCount * 2, destination: raw.baseAddress!)
                 }
                 guard status == kCMBlockBufferNoErr else { continue }
                 for value in pcm {
