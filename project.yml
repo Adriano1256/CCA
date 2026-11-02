@@ -1,0 +1,64 @@
+name: EditorIA
+options:
+  bundleIdPrefix: com.criativar
+  deploymentTarget:
+    iOS: "17.0"
+packages:
+  LlamaSwift:
+    url: https://github.com/mattt/llama.swift
+    exactVersion: 2.10549.0
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+    TARGETED_DEVICE_FAMILY: "1,2"
+    MARKETING_VERSION: "0.25"
+    CURRENT_PROJECT_VERSION: "25"
+targets:
+  EditorIA:
+    type: application
+    platform: iOS
+    sources:
+      - path: native-ios/EditorIA
+      - path: native-ios/Motion
+        type: folder
+        buildPhase: resources
+    dependencies:
+      - package: LlamaSwift
+        product: LlamaSwift
+    info:
+      path: native-ios/Info.plist
+      properties:
+        CFBundleDisplayName: Editor IA
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        ITSAppUsesNonExemptEncryption: false
+        LSRequiresIPhoneOS: true
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UIUserInterfaceStyle: Dark
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        # Os vídeos exportados aparecem no app Arquivos, em "Neste iPhone > Editor IA".
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+        NSMicrophoneUsageDescription: O Editor IA usa o microfone para gravar narração, salva somente no aparelho.
+        NSPhotoLibraryUsageDescription: O Editor IA usa sua autorização para importar vídeos e fotos para edição local no aparelho.
+        NSPhotoLibraryAddUsageDescription: O Editor IA usa sua autorização para salvar os vídeos exportados na sua Fototeca.
+        NSSpeechRecognitionUsageDescription: O Editor IA usa reconhecimento de fala no próprio aparelho para criar legendas, sem enviar o áudio para servidores.
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.criativar.editoria
+        PRODUCT_NAME: EditorIA
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        SUPPORTS_MACCATALYST: NO
+    scheme:
+      gatherCoverageData: false

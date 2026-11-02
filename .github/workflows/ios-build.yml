@@ -1,0 +1,95 @@
+name: Gerar app para iPhone
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Testes da lógica de edição
+        run: tests/run.sh /tmp/editor-tests
+
+      - name: Gerar projeto Xcode
+        run: |
+          brew install xcodegen
+          xcodebuild -version
+          xcodegen generate --spec project.yml
+
+      - name: Compilar para iPhone (sem assinatura)
+        run: |
+          set -o pipefail
+          xcodebuild -project EditorIA.xcodeproj -scheme EditorIA -configuration Release \
+            -destination 'generic/platform=iOS' -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build > build-device.log 2>&1 || true
+          grep -E 'error:|BUILD (SUCCEEDED|FAILED)' build-device.log | sort -u | head -80 || true
+          test -d build/Build/Products/Release-iphoneos/EditorIA.app
+
+      - name: Criar arquivo IPA
+        run: |
+          mkdir Payload
+          cp -R build/Build/Products/Release-iphoneos/EditorIA.app Payload/
+          zip -qry EditorIA.ipa Payload
+          ls -lh EditorIA.ipa
+
+      - name: Abrir o app no simulador e tirar print
+        continue-on-error: true
+        run: |
+          set -x
+          xcodebuild -project EditorIA.xcodeproj -scheme EditorIA -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' -derivedDataPath build-sim \
+            CODE_SIGNING_ALLOWED=NO build > build-sim.log 2>&1
+          DEVICE=$(xcrun simctl list devices available | grep -m1 -E 'iPhone 1[0-9]' | sed -E 's/.*\(([0-9A-F-]{36})\).*/\1/')
+          xcrun simctl boot "$DEVICE"
+          xcrun simctl bootstatus "$DEVICE" -b
+          xcrun simctl install "$DEVICE" build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app
+          xcrun simctl launch "$DEVICE" com.criativar.editoria
+          sleep 15
+          xcrun simctl io "$DEVICE" screenshot simulador-iphone.png
+          # Se o processo morreu, foi crash na abertura.
+          xcrun simctl spawn "$DEVICE" launchctl list | grep com.criativar.editoria
+
+      - name: Publicar relatório da compilação
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/report
+          grep -E 'error:|warning: unre|BUILD (SUCCEEDED|FAILED)' build-device.log | sort -u > /tmp/report/erros.txt || true
+          tail -c 200000 build-device.log > /tmp/report/build-device.log 2>/dev/null || true
+          cp build-sim.log simulador-iphone.png /tmp/report/ 2>/dev/null || true
+          ls -lh EditorIA.ipa > /tmp/report/ipa.txt 2>/dev/null || echo "sem ipa" > /tmp/report/ipa.txt
+          cd /tmp/report
+          git init -q -b ci-logs .
+          git config user.name "ci"; git config user.email "ci@users.noreply.github.com"
+          git add -A; git commit -q -m "Relatório ${{ github.sha }}" --no-gpg-sign
+          git push -f "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}" ci-logs
+
+      - name: Guardar resultado
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: EditorIA-iPhone
+          if-no-files-found: warn
+          path: |
+            EditorIA.ipa
+            build-device.log
+            build-sim.log
+            simulador-iphone.png
+
+      - name: Publicar IPA na página de Releases
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "build-${{ github.run_number }}-${{ github.run_attempt }}" EditorIA.ipa \
+            --title "Editor IA · build ${{ github.run_number }}" \
+            --notes "IPA sem assinatura. Instale pelo Sideloadly (veja INSTALAR_NO_IPHONE.md)."

@@ -1,0 +1,10 @@
+*.xcodeproj
+native-ios/Info.plist
+build/
+build-sim/
+node_modules/
+dist/
+Payload/
+*.ipa
+*.log
+.DS_Store
