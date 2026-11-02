@@ -44,7 +44,9 @@ jobs:
 
       - name: Abrir o app no simulador, exportar de verdade e tirar prints
         continue-on-error: true
-        run: tests/simulator-smoke.sh
+        run: |
+          mkdir -p smoke
+          tests/simulator-smoke.sh > smoke/run.log 2>&1
 
       - name: Publicar relatório da compilação
         if: always()
@@ -56,6 +58,7 @@ jobs:
           tail -c 200000 build-device.log > /tmp/report/build-device.log 2>/dev/null || true
           cp build-sim.log /tmp/report/ 2>/dev/null || true
           cp -R smoke /tmp/report/smoke 2>/dev/null || true
+          find /tmp/report/smoke \( -name '*.mov' -o -name '*.mp4' \) -delete 2>/dev/null || true
           ls -lh EditorIA.ipa > /tmp/report/ipa.txt 2>/dev/null || echo "sem ipa" > /tmp/report/ipa.txt
           cd /tmp/report
           git init -q -b ci-logs .

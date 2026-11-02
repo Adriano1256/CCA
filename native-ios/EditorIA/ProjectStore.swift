@@ -23,6 +23,7 @@ final class ProjectStore: ObservableObject {
     @Published private(set) var canRedo = false
     @Published private(set) var projects: [ProjectSummary] = []
     @Published private(set) var isImporting = false
+    @Published private(set) var isPreparing = false
 
     private var undoStack: [EditorProject] = []
     private var redoStack: [EditorProject] = []
@@ -77,6 +78,7 @@ final class ProjectStore: ObservableObject {
             try fileManager.createDirectory(at: projectsDirectory, withIntermediateDirectories: true)
             excludeFromBackup(projectDirectory)
             loadClients()
+            loadLibrary()
             loadInitialProject()
         } catch {
             status = "Não foi possível preparar o armazenamento local"
@@ -553,36 +555,40 @@ final class ProjectStore: ObservableObject {
             status = "Selecione um vídeo ou áudio, não uma imagem"
             return
         }
+        status = await transcribe(mediaID: media.id) ?? "Transcrição local concluída"
+        saveProject()
+    }
+
+    /// Transcreve o arquivo inteiro, uma vez só. Devolve a mensagem de erro, se houver.
+    @discardableResult
+    private func transcribe(mediaID: UUID) async -> String? {
+        guard let media = project.media.first(where: { $0.id == mediaID }) else { return nil }
+        guard media.transcript.isEmpty else { return nil }
         let url = urlForMedia(media)
-        status = "Transcrevendo localmente em português..."
         do {
-            let segments = try await LocalTranscriptionService.transcribe(url: url, localeIdentifier: "pt-BR")
-            let lowerBound = clip.sourceIn
-            let upperBound = clip.sourceIn + clip.duration
-            let words = segments.compactMap { segment -> CaptionWord? in
-                let segmentStart = segment.start
-                let segmentEnd = segment.start + segment.duration
-                guard segmentEnd > lowerBound, segmentStart < upperBound else { return nil }
-                let clippedStart = max(segmentStart, lowerBound)
-                let clippedEnd = min(segmentEnd, upperBound)
-                let timelineStart = clip.start + (clippedStart - lowerBound)
-                let wordText = segment.text.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !wordText.isEmpty, clippedEnd > clippedStart else { return nil }
-                return CaptionWord(text: wordText, start: timelineStart, duration: max(0.12, clippedEnd - clippedStart))
+            var words: [TranscriptWord]
+            if WhisperService.isInstalled {
+                words = try await WhisperService.transcribe(url: url)
+            } else {
+                let segments = try await LocalTranscriptionService.transcribe(url: url, localeIdentifier: "pt-BR")
+                words = segments.map { TranscriptWord(text: $0.text, start: $0.start, end: $0.start + $0.duration) }
             }
-            guard !words.isEmpty else {
-                status = "Nenhuma fala foi identificada no trecho selecionado"
-                return
-            }
-            recordUndo()
-            project.captionWords.removeAll { $0.start >= clip.start && $0.start < clip.end }
-            project.captionWords.append(contentsOf: words)
-            project.captionWords.sort { $0.start < $1.start }
-            status = "Transcrição local concluída: \(words.count) palavras/trechos sincronizados"
-            saveProject()
+            words = TranscriptCleaner.clean(words, speech: media.speechRanges)
+            guard !words.isEmpty else { return "Nenhuma fala foi identificada em \(media.name)" }
+            if let index = project.media.firstIndex(where: { $0.id == mediaID }) { project.media[index].transcript = words }
+            project.captionsEnabled = true
+            return nil
         } catch {
-            status = error.localizedDescription
+            return WhisperService.isInstalled ? error.localizedDescription : "\(error.localizedDescription) Instale o Whisper na aba Chat, em Modelos."
         }
+    }
+
+    /// Corrige uma palavra errada da transcrição; a legenda acompanha.
+    func correctTranscript(mediaID: UUID, wordIndex: Int, text: String) {
+        guard let index = project.media.firstIndex(where: { $0.id == mediaID }), project.media[index].transcript.indices.contains(wordIndex) else { return }
+        recordUndo(coalescing: "word-\(mediaID)-\(wordIndex)")
+        project.media[index].transcript[wordIndex].text = text
+        saveProject()
     }
 
     func setAutomaticDucking(_ enabled: Bool) {
@@ -605,8 +611,8 @@ final class ProjectStore: ObservableObject {
     func clearCaptionWords() {
         guard !project.captionWords.isEmpty else { return }
         recordUndo()
-        project.captionWords.removeAll()
-        status = "Legendas removidas do projeto"
+        project.captionsEnabled = false
+        status = "Legendas desligadas. A transcrição continua guardada."
         saveProject()
     }
 
@@ -783,6 +789,10 @@ final class ProjectStore: ObservableObject {
     /// Salva sem trocar a mensagem de status, para não apagar o resultado da última ação.
     func saveProject() {
         do {
+            // As legendas nascem da fala de cada arquivo, por isso acompanham qualquer edição.
+            if project.media.contains(where: { !$0.transcript.isEmpty }) {
+                project.captionWords = CaptionBuilder.timelineWords(project: project)
+            }
             project.updatedAt = .now
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -871,14 +881,6 @@ final class ProjectStore: ObservableObject {
         }
         recordUndo()
         project.clips = next
-        let removed = range.end - range.start
-        project.captionWords = project.captionWords.compactMap { word in
-            let center = word.start + word.duration / 2
-            if center >= range.start && center <= range.end { return nil }
-            var moved = word
-            if word.start >= range.end { moved.start = max(0, word.start - removed) }
-            return moved
-        }
         selectedClipID = nil
         status = "Corte de fala aprovado aplicado. Desfazer traz de volta."
         saveProject()
@@ -900,50 +902,174 @@ final class ProjectStore: ObservableObject {
 
     // MARK: - Análise automática
 
-    /// Analisa o som de todo o material, sugere o que é sonora e acha as batidas das músicas.
-    func analyzeAllSound(onProgress: (String) -> Void) async {
-        let targets = project.media.filter { !$0.isDerived && $0.kind != "Imagem" }
-        guard !targets.isEmpty else { status = "Nenhum vídeo ou áudio para analisar"; return }
-        recordUndo()
+    /// Prepara o material para a IA: ouve o som, olha as imagens e transcreve as sonoras.
+    /// Não entra no histórico de desfazer: só acrescenta informação, sem mudar a edição.
+    func prepareMaterial(onProgress: (String) -> Void) async {
+        guard !isPreparing else { return }
+        isPreparing = true
+        defer { isPreparing = false }
+        let targets = project.media.filter { !$0.isDerived && !$0.soundAnalyzed }
         var marked = 0
         for (position, item) in targets.enumerated() {
-            onProgress("Ouvindo \(position + 1) de \(targets.count): \(item.name)")
+            onProgress("Analisando \(position + 1) de \(targets.count): \(item.name)")
             let url = urlForMedia(item)
             let duration = item.duration ?? 0
-            guard let report = try? await SoundDirectorService.analyze(url: url, duration: duration),
-                  let index = project.media.firstIndex(where: { $0.id == item.id }) else { continue }
-            project.media[index].speechRanges = report.speechRanges
-            project.media[index].soundSummary = report.summary
-            if AudioContentAnalysis.looksLikeSonora(speechCoverage: report.speechShare, duration: duration), !project.media[index].isSonora, report.musicShare < 0.6 {
-                project.media[index].isSonora = true
-                marked += 1
-                if project.media[index].kind == "Áudio" {
-                    for clipIndex in project.clips.indices where project.clips[clipIndex].mediaID == item.id {
-                        project.clips[clipIndex].track = "voice"
-                        project.clips[clipIndex].volume = 1
+            let visual = item.kind == "Áudio" ? nil : try? await VisualAnalysisService.analyze(url: url, isVideo: item.kind == "Vídeo", duration: duration)
+            let sound = item.kind == "Imagem" ? nil : try? await SoundDirectorService.analyze(url: url, duration: duration)
+            guard let index = project.media.firstIndex(where: { $0.id == item.id }) else { continue }
+            project.media[index].soundAnalyzed = true
+            if let visual {
+                project.media[index].visualTags = visual.tags
+                project.media[index].faceShare = visual.faceShare
+            }
+            if let sound {
+                project.media[index].speechRanges = sound.speechRanges
+                project.media[index].soundSummary = sound.summary
+                if AudioContentAnalysis.looksLikeSonora(speechCoverage: sound.speechShare, duration: duration), sound.musicShare < 0.6, !project.media[index].isSonora {
+                    project.media[index].isSonora = true
+                    marked += 1
+                    if project.media[index].kind == "Áudio" {
+                        for clipIndex in project.clips.indices where project.clips[clipIndex].mediaID == item.id {
+                            project.clips[clipIndex].track = "voice"
+                            project.clips[clipIndex].volume = 1
+                        }
                     }
                 }
+                if item.kind == "Áudio", sound.musicShare >= 0.4, let beats = try? await SoundDirectorService.beats(url: url) {
+                    project.media[index].beats = beats
+                }
             }
-            if item.kind == "Áudio", report.musicShare >= 0.4, let beats = try? await SoundDirectorService.beats(url: url) {
-                project.media[index].beats = beats
+            saveProject()
+        }
+        await transcribeAllSonoras(onProgress: onProgress)
+        saveProject()
+        status = marked > 0 ? "Material analisado. \(marked) arquivo(s) marcados como sonora; confira na aba Mídia." : "Material analisado e pronto para o chat."
+    }
+
+    /// Transcreve as sonoras do projeto em ordem.
+    func transcribeAllSonoras(onProgress: (String) -> Void) async {
+        let targets = project.media.filter { $0.isSonora && $0.transcript.isEmpty && !$0.isDerived }
+        var problem: String?
+        for (position, item) in targets.enumerated() {
+            onProgress("Transcrevendo \(position + 1) de \(targets.count): \(item.name)")
+            if let message = await transcribe(mediaID: item.id) { problem = message }
+            saveProject()
+        }
+        if let problem { status = problem }
+    }
+
+    /// Ajusta cada clipe à proporção escolhida, com o assunto no quadro.
+    func autoReframe(frameWidth: Int, frameHeight: Int, onProgress: (String) -> Void) async {
+        recordUndo()
+        let clips = project.clips.filter { ["video", "broll"].contains($0.track) }
+        for (position, clip) in clips.enumerated() {
+            onProgress("Reenquadrando \(position + 1) de \(clips.count)")
+            guard let media = project.media.first(where: { $0.id == clip.mediaID }), media.kind != "Áudio" else { continue }
+            guard let report = try? await VisualAnalysisService.analyze(url: urlForMedia(media), isVideo: media.kind == "Vídeo", duration: media.duration ?? 0) else { continue }
+            let offset = Reframe.offset(imageWidth: report.imageWidth, imageHeight: report.imageHeight, frameWidth: Double(frameWidth), frameHeight: Double(frameHeight), interestX: report.interestX, interestY: report.interestY)
+            if let index = project.clips.firstIndex(where: { $0.id == clip.id }) {
+                project.clips[index].look.offsetX = offset.x
+                project.clips[index].look.offsetY = offset.y
             }
         }
-        status = "Som analisado. \(marked) arquivo(s) marcados como sonora; confira na aba Mídia."
+        status = "Clipes reenquadrados"
         saveProject()
     }
 
-    /// Transcreve cada sonora da timeline em ordem.
-    func transcribeAllSonoras(onProgress: (String) -> Void) async {
-        let targets = project.clips
-            .filter { clip in clip.track == "voice" || (project.media.first { $0.id == clip.mediaID }?.isSonora ?? false) }
-            .sorted { $0.start < $1.start }
-        guard !targets.isEmpty else { status = "Marque as sonoras na aba Mídia primeiro"; return }
-        for (position, clip) in targets.enumerated() {
-            onProgress("Transcrevendo \(position + 1) de \(targets.count)")
-            selectedClipID = clip.id
-            selectedMediaID = clip.mediaID
-            await transcribeSelectedClip()
+    func setCaptionOption(_ change: (inout EditorProject) -> Void) {
+        recordUndo(coalescing: "caption-option")
+        change(&project)
+        saveProject()
+    }
+
+    // MARK: - Biblioteca de sons
+
+    @Published private(set) var library: [LibraryItem] = []
+
+    private var libraryFile: URL { projectDirectory.appendingPathComponent("library.json") }
+
+    func loadLibrary() {
+        if let data = try? Data(contentsOf: libraryFile), let loaded = try? JSONDecoder().decode([LibraryItem].self, from: data) {
+            library = loaded
         }
+    }
+
+    private func saveLibrary() {
+        if let data = try? JSONEncoder().encode(library) { try? data.write(to: libraryFile, options: .atomic) }
+    }
+
+    func importToLibrary(_ urls: [URL], kind: String, mood: String, source: String) async {
+        let folder = projectDirectory.appendingPathComponent("Library", isDirectory: true)
+        try? fileManager.createDirectory(at: folder, withIntermediateDirectories: true)
+        for url in urls {
+            let access = url.startAccessingSecurityScopedResource()
+            defer { if access { url.stopAccessingSecurityScopedResource() } }
+            let destination = folder.appendingPathComponent("\(UUID().uuidString).\(url.pathExtension.isEmpty ? "m4a" : url.pathExtension)")
+            do {
+                try fileManager.copyItem(at: url, to: destination)
+                let duration = (try? await AVURLAsset(url: destination).load(.duration).seconds) ?? 0
+                status = "Analisando \(url.lastPathComponent)"
+                let beats = kind == "music" ? ((try? await SoundDirectorService.beats(url: destination)) ?? []) : []
+                library.append(LibraryItem(name: url.deletingPathExtension().lastPathComponent, relativePath: "Library/\(destination.lastPathComponent)", kind: kind, mood: mood, duration: duration, beats: beats, source: source))
+                saveLibrary()
+            } catch {
+                status = "Falha ao guardar \(url.lastPathComponent): \(error.localizedDescription)"
+            }
+        }
+        status = "Biblioteca atualizada"
+    }
+
+    func removeFromLibrary(_ id: UUID) {
+        guard let item = library.first(where: { $0.id == id }) else { return }
+        library.removeAll { $0.id == id }
+        saveLibrary()
+        // O arquivo fica se algum projeto ainda usa; caso contrário, sai junto.
+        if !project.media.contains(where: { $0.relativePath == item.relativePath }) {
+            try? fileManager.removeItem(at: projectDirectory.appendingPathComponent(item.relativePath))
+        }
+    }
+
+    func updateLibraryItem(_ item: LibraryItem) {
+        guard let index = library.firstIndex(where: { $0.id == item.id }) else { return }
+        library[index] = item
+        saveLibrary()
+    }
+
+    /// Coloca o item na timeline. Música ocupa o vídeo inteiro, com fade no fim e volume baixo.
+    @discardableResult
+    func addFromLibrary(_ item: LibraryItem, at time: Double? = nil) -> Bool {
+        recordUndo()
+        let media = LocalMedia(name: item.name, relativePath: item.relativePath, kind: "Áudio", byteCount: 0, importOrder: project.media.count + 1, duration: item.duration, isDerived: true, beats: item.beats)
+        project.media.append(media)
+        if item.kind == "music" {
+            let total = max(1, project.contentEnd)
+            project.clips.removeAll { $0.track == "audio" }
+            project.clips.append(TimelineClip(mediaID: media.id, track: "audio", start: 0, duration: min(item.duration, total), volume: 0.28, fadeIn: 0.5, fadeOut: 2, label: item.name))
+            status = "Música \"\(item.name)\" na trilha"
+        } else {
+            let start = time ?? playhead
+            project.clips.append(TimelineClip(mediaID: media.id, track: "sfx", start: start, duration: item.duration, volume: 0.8, label: item.name))
+            status = "Efeito \"\(item.name)\" na timeline"
+        }
+        saveProject()
+        return true
+    }
+
+    /// Procura pelo clima ou tipo; sem correspondência, usa o primeiro disponível.
+    func libraryItem(kind: String, mood: String) -> LibraryItem? {
+        let list = library.filter { $0.kind == kind }
+        return list.first { $0.mood.localizedCaseInsensitiveContains(mood) && !mood.isEmpty } ?? (mood.isEmpty ? list.first : nil)
+    }
+
+    func duplicateCurrentProject() {
+        saveProject()
+        var copy = project
+        copy.id = UUID()
+        copy.name += " (cópia)"
+        activate(copy)
+        saveProject()
+        refreshProjects()
+        status = "Versão duplicada. O projeto anterior continua guardado."
     }
 
     /// Batidas da primeira música da timeline, em tempo de timeline.

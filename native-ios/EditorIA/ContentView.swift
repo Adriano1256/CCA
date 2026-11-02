@@ -6,7 +6,8 @@ import PhotosUI
 import Photos
 
 private enum EditorSection: String, CaseIterable, Identifiable {
-    case director = "Diretor IA"
+    case chat = "Chat"
+    case director = "Montagem"
     case clip = "Clipe"
     case media = "Mídia"
     case captions = "Legendas"
@@ -18,6 +19,7 @@ private enum EditorSection: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var symbol: String {
         switch self {
+        case .chat: return "bubble.left.and.text.bubble.right.fill"
         case .director: return "sparkles"
         case .clip: return "slider.horizontal.3"
         case .media: return "square.stack.3d.up"
@@ -33,7 +35,7 @@ private enum EditorSection: String, CaseIterable, Identifiable {
 struct ContentView: View {
     @EnvironmentObject private var store: ProjectStore
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @State private var selection: EditorSection? = .director
+    @State private var selection: EditorSection? = .chat
     @State private var sheetSection: EditorSection?
     @State private var showProjects = false
     @State private var showFileImporter = false
@@ -103,7 +105,10 @@ struct ContentView: View {
             case .success(let urls):
                 // Nomes de câmera em ordem correspondem à ordem cronológica.
                 let ordered = urls.sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
-                Task { await store.importFiles(ordered) }
+                Task {
+                    await store.importFiles(ordered)
+                    await store.prepareMaterial { store.status = $0 }
+                }
             case .failure(let error): store.status = error.localizedDescription
             }
         }
@@ -125,8 +130,14 @@ struct ContentView: View {
         }
         .sheet(item: $sheetSection) { section in
             NavigationStack {
-                ScrollView {
-                    sectionContent(section).padding()
+                Group {
+                    if section == .chat {
+                        sectionContent(section).padding(.horizontal)
+                    } else {
+                        ScrollView {
+                            sectionContent(section).padding()
+                        }
+                    }
                 }
                 .navigationTitle(section.rawValue)
                 .navigationBarTitleDisplayMode(.inline)
@@ -154,6 +165,7 @@ struct ContentView: View {
             #endif
         }
         .onChange(of: store.project.updatedAt) { _, _ in rebuildPreview() }
+        .onChange(of: agent.pendingPlanCount) { _, _ in applyPendingPlans() }
         .onChange(of: store.project.id) { _, _ in
             exportedURL = nil
             exportedStories = []
@@ -227,7 +239,7 @@ struct ContentView: View {
                         transportBar
                         EditorTimeline(isPlaying: playback.isPlaying, onSeek: seek)
                         if store.selectedClip != nil { quickClipActions }
-                        sectionContent(selection ?? .director)
+                        sectionContent(selection ?? .chat)
                     }
                     .padding()
                 }
@@ -417,33 +429,75 @@ struct ContentView: View {
         .background(.bar)
     }
 
-    /// Pedidos da IA que precisam do aparelho, não só de mexer no projeto.
+    /// Aplica direto na timeline o que a IA decidiu, mesmo com o chat fechado. Tudo pode ser desfeito.
+    private func applyPendingPlans() {
+        for message in agent.messages where message.plan != nil && !message.applied {
+            guard let plan = message.plan else { continue }
+            let outcome = store.applyAgentPlan(plan)
+            agent.markApplied(message.id, outcome: outcome.done)
+            if !outcome.blocked.isEmpty { agent.addNote(outcome.blocked.joined(separator: "\n")) }
+            handleAgentRequests(outcome.requests)
+        }
+    }
+
+    /// Pedidos da IA que precisam do aparelho, um de cada vez e na ordem pedida.
     private func handleAgentRequests(_ requests: [AgentRequest]) {
-        for request in requests {
-            switch request {
-            case .transcribeAll:
-                Task { await store.transcribeAllSonoras { store.status = $0 } }
-            case .analyzeSound:
-                Task { await store.analyzeAllSound { store.status = $0 } }
-            case .exportVideo:
-                startExport()
-            case .motion(let templateID, let text, let start, let duration):
-                guard let template = MotionTemplate.loadCatalog().first(where: { $0.id == templateID }) else {
-                    agent.addNote("Modelo de motion \"\(templateID)\" não existe.")
-                    continue
-                }
-                let client = store.currentClient
-                let values = ["titulo": text, "cor1": client?.primaryHex ?? "#1F6FEB", "cor2": client?.secondaryHex ?? "#FFFFFF", "logo": store.logoDataURI(for: client)]
-                let output = store.newMotionURL()
-                let size = baseDimensions
-                Task {
-                    do {
-                        try await motion.renderTemplate(template, values: values, duration: duration, width: size.width, height: size.height, frameRate: 30, output: output)
-                        store.addMotionClip(file: output, name: template.name, start: start, duration: duration, opaque: !template.transparent)
-                    } catch {
-                        agent.addNote(error.localizedDescription)
-                    }
-                }
+        guard !requests.isEmpty else { return }
+        Task {
+            for request in requests {
+                await perform(request)
+            }
+            seek(store.playhead)
+        }
+    }
+
+    private func perform(_ request: AgentRequest) async {
+        switch request {
+        case .transcribeAll:
+            await store.transcribeAllSonoras { store.status = $0 }
+            agent.addNote(store.status)
+        case .analyzeSound, .prepare:
+            await store.prepareMaterial { store.status = $0 }
+            agent.addNote(store.status)
+        case .exportVideo:
+            startExport()
+        case .undo:
+            store.undo()
+        case .reframe:
+            let size = baseDimensions
+            await store.autoReframe(frameWidth: size.width, frameHeight: size.height) { store.status = $0 }
+            agent.addNote(store.status)
+        case .addMusic(let mood):
+            if let item = store.libraryItem(kind: "music", mood: mood) {
+                store.addFromLibrary(item)
+                agent.addNote("Coloquei \"\(item.name)\". A música abaixa sozinha durante as falas.")
+            } else {
+                agent.addNote(mood.isEmpty ? "Sua biblioteca de música está vazia. Importe músicas na aba Áudio." : "Não há música com o clima \"\(mood)\" na biblioteca. Importe na aba Áudio.")
+            }
+        case .addSound(let kind, let time):
+            if let item = store.libraryItem(kind: "sfx", mood: kind) {
+                store.addFromLibrary(item, at: time)
+            } else {
+                agent.addNote("Não há efeito do tipo \"\(kind)\" na biblioteca. Importe na aba Áudio.")
+            }
+        case .motion(let templateID, let text, let start, let duration):
+            let catalog = MotionTemplate.loadCatalog()
+            // Pedido de texto animado com estilo vira o modelo livre.
+            let template = catalog.first { $0.id == templateID } ?? catalog.first { $0.id == "kinetic" }
+            guard let template else {
+                agent.addNote("Os modelos de motion não foram encontrados.")
+                return
+            }
+            let client = store.currentClient
+            var values = ["titulo": text, "cor1": client?.primaryHex ?? "#FFD84D", "cor2": client?.secondaryHex ?? "#FFFFFF", "logo": store.logoDataURI(for: client)]
+            if template.id == "kinetic", templateID != "kinetic" { values["estilo"] = templateID }
+            let output = store.newMotionURL()
+            let size = baseDimensions
+            do {
+                try await motion.renderTemplate(template, values: values, duration: duration, width: size.width, height: size.height, frameRate: 30, output: output)
+                store.addMotionClip(file: output, name: template.name, start: start, duration: duration, opaque: !template.transparent)
+            } catch {
+                agent.addNote(error.localizedDescription)
             }
         }
     }
@@ -524,6 +578,7 @@ struct ContentView: View {
             }
             if !stagedURLs.isEmpty {
                 await store.importFiles(stagedURLs, moveFiles: true)
+                await store.prepareMaterial { store.status = $0 }
                 stagedURLs.forEach { try? FileManager.default.removeItem(at: $0.deletingLastPathComponent()) }
             } else {
                 store.status = "Nenhum arquivo compatível foi recebido da Fototeca"
@@ -580,8 +635,9 @@ struct ContentView: View {
             } else {
                 ContentUnavailableView("Nenhum clipe selecionado", systemImage: "cursorarrow.click", description: Text("Toque em um clipe na timeline."))
             }
+        case .chat:
+            AIAssistantPanel(models: models, agent: agent, fillsHeight: sheetSection == .chat)
         case .director:
-            AIAssistantPanel(models: models, agent: agent, onRequests: handleAgentRequests)
             VStack(alignment: .leading, spacing: 12) {
                 Label("Montagem automática", systemImage: "sparkles")
                     .font(.title3.bold())
@@ -769,13 +825,8 @@ struct ContentView: View {
                 } label: { Label(analysisMessage ?? "Transcrever todas as sonoras", systemImage: "text.badge.checkmark") }
                 .buttonStyle(.bordered)
                 .disabled(isTranscribing)
-                Picker("Estilo da legenda", selection: Binding(get: { store.project.captionStyle }, set: { value in store.setCaptionStyle(value) })) {
-                    Text("Karaokê").tag("karaoke")
-                    Text("Frase").tag("phrase")
-                    Text("Palavra").tag("word")
-                }
-                .pickerStyle(.segmented)
-                Text("Usa reconhecimento de fala no próprio aparelho, quando o idioma e o dispositivo oferecem suporte a reconhecimento offline. Não envia o áudio para um servidor.")
+                CaptionStylePanel()
+                Text("A fala é transcrita no próprio aparelho, sem enviar nada. As legendas acompanham qualquer corte ou mudança de lugar do clipe.")
                     .font(.caption).foregroundStyle(.secondary)
 
                 if !store.project.captionWords.isEmpty {
@@ -813,7 +864,7 @@ struct ContentView: View {
                         .padding(.vertical, 4)
                     }
                 }
-                Text("A transcrição usa reconhecimento local do iOS quando disponível. Para funcionamento consistente em todos os aparelhos e idiomas, ainda integraremos um modelo local próprio.")
+                Text("Para melhor precisão em português, instale o Whisper em Chat, no botão Modelos.")
                     .font(.caption).foregroundStyle(.tertiary)
             }
             .padding()
@@ -1090,14 +1141,15 @@ struct ContentView: View {
                 .font(.title3.bold())
             Button {
                 Task {
-                    await store.analyzeAllSound { analysisMessage = $0 }
+                    await store.prepareMaterial { analysisMessage = $0 }
                     analysisMessage = nil
                 }
-            } label: { Label(analysisMessage ?? "Ouvir todo o material", systemImage: "ear") }
-                .buttonStyle(.borderedProminent)
-                .disabled(analysisMessage != nil)
-            Text("Detecta fala e música no próprio aparelho, sugere quais arquivos são sonoras, acha as batidas das músicas para os cortes da abertura e abaixa a trilha só quando há fala.")
+            } label: { Label(analysisMessage ?? "Analisar o material de novo", systemImage: "ear") }
+                .buttonStyle(.bordered)
+                .disabled(analysisMessage != nil || store.isPreparing)
+            Text("Ao importar, o app ouve e olha cada arquivo no próprio aparelho: detecta fala e música, marca as sonoras, acha as batidas e transcreve. A música abaixa sozinha quando há fala.")
                 .font(.caption).foregroundStyle(.secondary)
+            SoundLibraryPanel()
             Button { showVoiceRecorder = true } label: { Label("Gravar narração", systemImage: "mic.fill") }
                 .buttonStyle(.bordered)
             Text("Análise acústica local para identificar níveis de áudio e pausas. Nenhum arquivo é enviado para a nuvem.")
@@ -1148,7 +1200,7 @@ struct ContentView: View {
                         get: { store.project.duckingLevel },
                         set: { store.setDuckingLevel($0) }
                     ), in: 0.05 ... 0.8, step: 0.05)
-                    Text("O ducking precisa de fala detectada: use Ouvir todo o material ou transcreva as sonoras.")
+                    Text("O ducking usa a fala detectada na análise do material.")
                         .font(.caption2).foregroundStyle(.secondary)
                 }
             }
@@ -1219,7 +1271,7 @@ struct ContentView: View {
                         .padding(.vertical, 3)
                     }
                 }
-                Text("Esta medida mostra volume e pausas. Fala e música vêm de Ouvir todo o material. Trilha e efeitos sonoros automáticos ainda não existem.")
+                Text("Esta medida mostra volume e pausas do arquivo selecionado.")
                     .font(.caption2).foregroundStyle(.tertiary)
             }
         }
@@ -1367,7 +1419,7 @@ private struct EditorTimeline: View {
     @State private var trimStartSeconds = 0.0
     @State private var trimEndSeconds = 0.0
 
-    private let laneHeight: CGFloat = 34
+    private let laneHeight: CGFloat = 44
     private let laneSpacing: CGFloat = 4
     private let rulerHeight: CGFloat = 22
 
@@ -1534,9 +1586,18 @@ private struct EditorTimeline: View {
         return Text(displayName(clip.label))
             .font(.system(size: 9, weight: .medium))
             .lineLimit(1)
+            .shadow(color: .black, radius: 2)
             .padding(.horizontal, selected ? 16 : 5)
             .frame(width: CGFloat(max(10, duration * scale)), height: laneHeight - 4, alignment: .leading)
-            .background(tint.opacity(selected ? 0.95 : 0.55), in: RoundedRectangle(cornerRadius: 4))
+            .background {
+                ZStack {
+                    tint.opacity(selected ? 0.95 : 0.55)
+                    if let media = store.project.media.first(where: { $0.id == clip.mediaID }) {
+                        ClipPreviewStrip(media: media, clip: clip, url: store.urlForMedia(media), width: CGFloat(max(10, duration * scale)), height: laneHeight - 4)
+                    }
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 4))
+            }
             .overlay {
                 RoundedRectangle(cornerRadius: 4).stroke(selected ? Color.white : Color.clear, lineWidth: 1.5)
             }
@@ -1638,8 +1699,10 @@ private struct ProjectsSheet: View {
                 ToolbarItem(placement: .primaryAction) {
                     Button { nameDraft = ""; showNew = true } label: { Label("Novo projeto", systemImage: "plus") }
                 }
-                ToolbarItem(placement: .bottomBar) {
-                    Button("Renomear projeto atual") { nameDraft = store.project.name; showRename = true }
+                ToolbarItemGroup(placement: .bottomBar) {
+                    Button("Renomear") { nameDraft = store.project.name; showRename = true }
+                    Spacer()
+                    Button("Duplicar versão") { store.duplicateCurrentProject(); dismiss() }
                 }
             }
             .alert("Novo projeto", isPresented: $showNew) {

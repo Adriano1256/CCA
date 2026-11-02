@@ -20,64 +20,116 @@ struct AIAssistantPanel: View {
     @EnvironmentObject private var store: ProjectStore
     @ObservedObject var models: ModelManager
     @ObservedObject var agent: AgentController
-    let onRequests: ([AgentRequest]) -> Void
+    var fillsHeight = false
     @State private var text = ""
     @State private var showModels = false
 
+    private let suggestions = [
+        "Monta o vídeo institucional",
+        "Coloca legenda animada karaokê",
+        "Tira o som do B-roll",
+        "Coloca uma música emocionante",
+        "Deixa com visual de cinema",
+        "Faz os Stories"
+    ]
+
     var body: some View {
-        panelBackground {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Label("IA do editor", systemImage: "brain")
-                    .font(.title3.bold())
+                Label("Peça a edição", systemImage: "bubble.left.and.text.bubble.right.fill")
+                    .font(.headline)
                 Spacer()
                 Button { showModels = true } label: {
-                    Label(models.activeModel?.name ?? "Instalar", systemImage: models.activeModel == nil ? "arrow.down.circle" : "cpu")
+                    Label(models.activeModel?.name ?? "Modelos", systemImage: models.activeModel == nil ? "arrow.down.circle" : "cpu")
                         .font(.caption)
+                        .lineLimit(1)
                 }
                 .buttonStyle(.bordered)
             }
-            if models.activeModel == nil {
-                Text("Baixe um modelo uma vez, com internet. Depois a IA funciona em modo avião, e nada do seu vídeo sai do aparelho.")
-                    .font(.caption).foregroundStyle(.secondary)
-                Button { showModels = true } label: { Label("Escolher modelo de IA", systemImage: "arrow.down.circle.fill") }
-                    .buttonStyle(.borderedProminent)
-            }
-            ForEach(agent.messages) { message in
-                messageView(message)
-            }
-            if agent.isThinking {
+            if store.isPreparing {
                 HStack {
                     ProgressView()
-                    Text(agent.tokens == 0 ? "Pensando…" : "Escrevendo… \(agent.tokens)").font(.caption).foregroundStyle(.secondary)
-                    Spacer()
-                    Button("Parar") { agent.stop() }.font(.caption)
+                    Text(store.status).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                }
+            }
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 10) {
+                        if agent.messages.isEmpty {
+                            Text(models.activeModel == nil
+                                 ? "Sem modelo de IA, o chat entende só os pedidos mais comuns. Baixe um modelo uma vez, com internet, para pedir qualquer coisa em modo avião."
+                                 : "Importe seus vídeos e diga o que quer. A IA conhece seus clipes, as falas e o que aparece nas imagens.")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                        ForEach(agent.messages) { message in
+                            messageView(message).id(message.id)
+                        }
+                        if agent.isThinking {
+                            HStack {
+                                ProgressView()
+                                Text(agent.tokens == 0 ? "Pensando…" : "Escrevendo… \(agent.tokens)").font(.caption).foregroundStyle(.secondary)
+                                Spacer()
+                                Button("Parar") { agent.stop() }.font(.caption)
+                            }
+                            .id("pensando")
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .frame(minHeight: 160, maxHeight: fillsHeight ? .infinity : 420)
+                .onChange(of: agent.messages.count) { _, _ in
+                    if let last = agent.messages.last?.id {
+                        withAnimation { proxy.scrollTo(last, anchor: .bottom) }
+                    }
+                }
+            }
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack {
+                    ForEach(suggestions, id: \.self) { suggestion in
+                        Button(suggestion) { send(suggestion) }
+                            .font(.caption)
+                            .buttonStyle(.bordered)
+                            .disabled(agent.isThinking)
+                    }
                 }
             }
             HStack(alignment: .bottom) {
-                TextField("Ex.: tire o som do B-roll e coloque um título no início", text: $text, axis: .vertical)
+                TextField("Peça aqui o que quer no vídeo", text: $text, axis: .vertical)
                     .lineLimit(1...4)
                     .textFieldStyle(.roundedBorder)
                 Button {
-                    send()
+                    send(text)
+                    text = ""
                 } label: {
                     Image(systemName: "arrow.up.circle.fill").font(.title2)
                 }
-                .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || agent.isThinking || models.activeModel == nil)
+                .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || agent.isThinking)
                 .accessibilityLabel("Enviar pedido")
             }
-            Text("A IA propõe e você aprova. Cortes em fala nunca são feitos por ela. Pode errar: confira, e use Desfazer se precisar.")
+            Text("A edição entra direto na timeline. Se não gostar, use Desfazer. Corte em fala sempre pede sua aprovação.")
                 .font(.caption2).foregroundStyle(.secondary)
         }
+        .padding(.vertical, 8)
         .sheet(isPresented: $showModels) { ModelManagerSheet(models: models) }
     }
 
-    private func send() {
-        guard let model = models.activeModel else { return }
-        let request = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        text = ""
-        let templates = MotionTemplate.loadCatalog().map(\.id)
-        let summary = AgentProtocol.projectSummary(store.project, playhead: store.playhead, selectedClip: store.selectedClipID, motionTemplates: templates)
-        agent.ask(request, model: model, modelURL: models.url(for: model), summary: summary)
+    private func send(_ raw: String) {
+        let request = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !request.isEmpty else { return }
+        if let model = models.activeModel {
+            let summary = AgentProtocol.projectSummary(
+                store.project,
+                playhead: store.playhead,
+                selectedClip: store.selectedClipID,
+                motionTemplates: MotionTemplate.loadCatalog().map(\.id) + MotionTemplate.kineticStyles,
+                libraryMoods: Array(Set(store.library.map(\.mood))).sorted()
+            )
+            agent.ask(request, model: model, modelURL: models.url(for: model), summary: summary, fallback: RuleAgent.plan(for: request, project: store.project))
+        } else if let plan = RuleAgent.plan(for: request, project: store.project) {
+            agent.addExchange(request: request, plan: plan)
+        } else {
+            agent.addExchange(request: request, plan: AgentPlan(reply: "Sem modelo de IA instalado, só entendo pedidos comuns. Toque em Modelos para instalar e poder pedir qualquer coisa.", actions: []))
+        }
     }
 
     @ViewBuilder
@@ -87,25 +139,17 @@ struct AIAssistantPanel: View {
                 .font(.subheadline)
                 .padding(10)
                 .background(message.fromUser ? Color.accentColor.opacity(0.25) : Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
-            if let plan = message.plan {
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(Array(plan.actions.enumerated()), id: \.offset) { _, action in
-                        Label(action.readable, systemImage: "wand.and.rays").font(.caption2)
+            if message.applied, !message.done.isEmpty {
+                VStack(alignment: .leading, spacing: 3) {
+                    ForEach(message.done, id: \.self) { line in
+                        Label(line, systemImage: "checkmark.circle.fill").font(.caption2).foregroundStyle(.green)
                     }
-                    if message.applied {
-                        Label("Aplicado", systemImage: "checkmark.circle.fill").font(.caption).foregroundStyle(.green)
-                    } else {
-                        Button {
-                            let outcome = store.applyAgentPlan(plan)
-                            agent.markApplied(message.id)
-                            if !outcome.blocked.isEmpty { agent.addNote(outcome.blocked.joined(separator: "\n")) }
-                            onRequests(outcome.requests)
-                        } label: { Label("Aplicar na timeline", systemImage: "checkmark") }
-                            .buttonStyle(.borderedProminent)
+                    if message.id == agent.messages.last(where: { $0.applied })?.id {
+                        Button { store.undo() } label: { Label("Desfazer", systemImage: "arrow.uturn.backward") }
+                            .font(.caption)
+                            .buttonStyle(.bordered)
                     }
                 }
-                .padding(8)
-                .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
             }
         }
         .frame(maxWidth: .infinity, alignment: message.fromUser ? .trailing : .leading)
@@ -125,7 +169,8 @@ struct ModelManagerSheet: View {
                     Text("O download precisa de internet só uma vez, e use Wi-Fi: os arquivos são grandes. Nenhum vídeo é enviado.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
-                ForEach(LocalModel.catalog) { model in
+                WhisperModelSection()
+                Section("Modelo de linguagem") { ForEach(LocalModel.catalog) { model in
                     VStack(alignment: .leading, spacing: 6) {
                         HStack {
                             Text(model.name).font(.headline)
@@ -157,7 +202,7 @@ struct ModelManagerSheet: View {
                         }
                     }
                     .padding(.vertical, 4)
-                }
+                } }
                 if let message = models.message {
                     Text(message).font(.caption)
                 }
@@ -269,7 +314,16 @@ struct MotionTemplateSheet: View {
         NavigationStack {
             Form {
                 ForEach(template.fields, id: \.self) { field in
-                    TextField(MotionTemplate.fieldTitles[field] ?? field, text: Binding(get: { values[field] ?? "" }, set: { values[field] = $0 }), axis: .vertical)
+                    if field == "estilo" {
+                        Picker("Estilo", selection: Binding(get: { values[field] ?? "impacto" }, set: { values[field] = $0 })) {
+                            ForEach(MotionTemplate.kineticStyles, id: \.self) { Text($0).tag($0) }
+                        }
+                    } else {
+                        TextField(MotionTemplate.fieldTitles[field] ?? field, text: Binding(get: { values[field] ?? "" }, set: { values[field] = $0 }), axis: .vertical)
+                    }
+                }
+                if template.id == "kinetic" {
+                    Text("Cada frase vira uma cena. Separe com ponto final ou com |.").font(.caption).foregroundStyle(.secondary)
                 }
                 if template.id == "lista-entregas" {
                     Text("Em Subtítulo, separe os itens com ponto e vírgula.").font(.caption).foregroundStyle(.secondary)
@@ -354,6 +408,15 @@ struct ColorPanel: View {
             if store.selectedClip == nil {
                 Text("Toque em um clipe na timeline para ajustar a cor.").font(.caption).foregroundStyle(.secondary)
             } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack {
+                        ForEach(ColorLooks.names, id: \.self) { name in
+                            Button(name.capitalized) { store.updateSelectedLook("preset") { ColorLooks.apply(name, to: &$0) } }
+                                .font(.caption)
+                                .buttonStyle(.bordered)
+                        }
+                    }
+                }
                 slider("Exposição", "exposure", \.exposure, -2...2, neutral: 0)
                 slider("Contraste", "contrast", \.contrast, 0.5...1.5, neutral: 1)
                 slider("Saturação", "saturation", \.saturation, 0...2, neutral: 1)
@@ -731,5 +794,301 @@ struct VoiceRecorderSheet: View {
                 errorText = error.localizedDescription
             }
         }
+    }
+}
+
+
+// MARK: - Whisper
+
+struct WhisperModelSection: View {
+    @State private var installed = WhisperService.isInstalled
+    @State private var progress: Double?
+    @State private var errorText: String?
+
+    var body: some View {
+        Section("Transcrição de fala (Whisper)") {
+            if installed {
+                Label("Whisper instalado", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+                Button("Apagar", role: .destructive) {
+                    WhisperService.remove()
+                    installed = false
+                }
+            } else if let progress {
+                ProgressView(value: progress)
+            } else {
+                ForEach(WhisperService.options) { option in
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(option.name).font(.headline)
+                        Text(option.detail).font(.caption).foregroundStyle(.secondary)
+                        Button("Baixar") { download(option) }.buttonStyle(.borderedProminent)
+                    }
+                }
+                Text("Sem ele, o app tenta o reconhecimento do próprio iPhone, que pode não ter português offline.")
+                    .font(.caption2).foregroundStyle(.secondary)
+            }
+            if let errorText { Text(errorText).font(.caption).foregroundStyle(.red) }
+        }
+    }
+
+    private func download(_ option: WhisperService.Option) {
+        progress = 0
+        errorText = nil
+        Task {
+            do {
+                try await WhisperService.download(option) { value in
+                    Task { @MainActor in progress = value }
+                }
+                installed = WhisperService.isInstalled
+            } catch {
+                errorText = error.localizedDescription
+            }
+            progress = nil
+        }
+    }
+}
+
+// MARK: - Legendas
+
+struct CaptionStylePanel: View {
+    @EnvironmentObject private var store: ProjectStore
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Legenda animada").font(.subheadline.bold())
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 104), spacing: 6)], spacing: 6) {
+                ForEach(CaptionAnimator.styles, id: \.id) { style in
+                    Button {
+                        store.setCaptionOption {
+                            $0.captionStyle = style.id
+                            $0.captionsEnabled = true
+                        }
+                    } label: {
+                        Text(style.name)
+                            .font(.caption)
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                            .background(store.project.captionStyle == style.id ? Color.accentColor.opacity(0.4) : Color.secondary.opacity(0.14), in: RoundedRectangle(cornerRadius: 8))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            ColorPicker("Cor do destaque", selection: Binding(
+                get: { Color(hex: store.project.captionHighlightHex) },
+                set: { value in store.setCaptionOption { $0.captionHighlightHex = value.hexString } }
+            ), supportsOpacity: false).font(.caption)
+            ColorPicker("Cor do texto", selection: Binding(
+                get: { Color(hex: store.project.captionTextHex) },
+                set: { value in store.setCaptionOption { $0.captionTextHex = value.hexString } }
+            ), supportsOpacity: false).font(.caption)
+            HStack {
+                Text("Tamanho").font(.caption)
+                Slider(value: Binding(get: { store.project.captionFontSize }, set: { value in store.setCaptionOption { $0.captionFontSize = value } }), in: 40...140)
+            }
+            HStack {
+                Text("Altura").font(.caption)
+                Slider(value: Binding(get: { store.project.captionVertical ?? 0.8 }, set: { value in store.setCaptionOption { $0.captionVertical = value } }), in: 0.1...0.95)
+            }
+            Picker("Fonte", selection: Binding(get: { store.project.captionFontStyle }, set: { value in store.setCaptionOption { $0.captionFontStyle = value } })) {
+                Text("Forte").tag("heavy")
+                Text("Arredondada").tag("rounded")
+                Text("Serifada").tag("serif")
+            }
+            .pickerStyle(.segmented)
+        }
+    }
+}
+
+// MARK: - Biblioteca de sons
+
+struct SoundLibraryPanel: View {
+    @EnvironmentObject private var store: ProjectStore
+    @State private var showImporter = false
+    @State private var importKind = "music"
+    @State private var importMood = LibraryItem.musicMoods[0]
+    @State private var player: AVAudioPlayer?
+    @State private var playingID: UUID?
+
+    var body: some View {
+        GroupBox("Biblioteca de sons") {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Suas músicas e efeitos, guardados no aparelho e usados em qualquer projeto, sem internet. Importe só o que você tem licença para usar.")
+                    .font(.caption).foregroundStyle(.secondary)
+                Picker("Tipo", selection: $importKind) {
+                    Text("Música").tag("music")
+                    Text("Efeito").tag("sfx")
+                }
+                .pickerStyle(.segmented)
+                .onChange(of: importKind) { _, kind in
+                    importMood = kind == "music" ? LibraryItem.musicMoods[0] : LibraryItem.sfxKinds[0]
+                }
+                Picker("Clima", selection: $importMood) {
+                    ForEach(importKind == "music" ? LibraryItem.musicMoods : LibraryItem.sfxKinds, id: \.self) { Text($0).tag($0) }
+                }
+                .pickerStyle(.menu)
+                Button { showImporter = true } label: { Label("Importar para a biblioteca", systemImage: "plus") }
+                    .buttonStyle(.bordered)
+                ForEach(store.library.filter { $0.kind == importKind }) { item in
+                    HStack {
+                        Button { toggle(item) } label: {
+                            Image(systemName: playingID == item.id ? "stop.fill" : "play.fill").frame(width: 36, height: 36)
+                        }
+                        .accessibilityLabel(playingID == item.id ? "Parar" : "Ouvir")
+                        VStack(alignment: .leading) {
+                            Text(item.name).font(.caption.weight(.medium)).lineLimit(1)
+                            Text("\(item.mood) · \(Int(item.duration)) s").font(.caption2).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Button("Usar") { store.addFromLibrary(item) }.font(.caption).buttonStyle(.borderedProminent)
+                        Button(role: .destructive) { store.removeFromLibrary(item.id) } label: { Image(systemName: "trash") }
+                            .accessibilityLabel("Tirar da biblioteca")
+                    }
+                }
+            }
+        }
+        .fileImporter(isPresented: $showImporter, allowedContentTypes: [.audio], allowsMultipleSelection: true) { result in
+            if case .success(let urls) = result {
+                let kind = importKind, mood = importMood
+                Task { await store.importToLibrary(urls, kind: kind, mood: mood, source: "") }
+            }
+        }
+    }
+
+    private func toggle(_ item: LibraryItem) {
+        if playingID == item.id {
+            player?.stop()
+            playingID = nil
+            return
+        }
+        player = try? AVAudioPlayer(contentsOf: store.baseDirectoryURL.appendingPathComponent(item.relativePath))
+        player?.play()
+        playingID = item.id
+    }
+}
+
+// MARK: - Imagens na timeline
+
+@MainActor
+private enum ThumbnailCache {
+    static let images = NSCache<NSString, UIImage>()
+}
+
+/// Miniaturas dos vídeos e fotos, e forma de onda do áudio, dentro dos clipes da timeline.
+struct ClipPreviewStrip: View {
+    let media: LocalMedia
+    let clip: TimelineClip
+    let url: URL
+    let width: CGFloat
+    let height: CGFloat
+    @State private var frames: [UIImage] = []
+    @State private var levels: [Float] = []
+
+    var body: some View {
+        Group {
+            if media.kind == "Áudio" {
+                Canvas { context, size in
+                    guard !levels.isEmpty else { return }
+                    let step = size.width / CGFloat(levels.count)
+                    for (index, level) in levels.enumerated() {
+                        let bar = max(1, CGFloat(level) * size.height)
+                        let rect = CGRect(x: CGFloat(index) * step, y: (size.height - bar) / 2, width: max(1, step - 1), height: bar)
+                        context.fill(Path(rect), with: .color(.white.opacity(0.75)))
+                    }
+                }
+            } else {
+                HStack(spacing: 0) {
+                    ForEach(Array(frames.enumerated()), id: \.offset) { _, frame in
+                        Image(uiImage: frame)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: width / CGFloat(max(1, frames.count)), height: height)
+                            .clipped()
+                    }
+                }
+                .opacity(0.8)
+            }
+        }
+        .frame(width: width, height: height)
+        .allowsHitTesting(false)
+        .task(id: "\(clip.sourceIn)-\(clip.duration)-\(Int(width / 60))") { await load() }
+    }
+
+    @MainActor
+    private func load() async {
+        if media.kind == "Áudio" {
+            if levels.isEmpty {
+                levels = (try? await WaveformReader.levels(url: url, sourceIn: clip.sourceIn, duration: clip.duration * clip.look.speed, count: 80)) ?? []
+            }
+            return
+        }
+        if media.kind == "Imagem" {
+            let key = url.path as NSString
+            if let cached = ThumbnailCache.images.object(forKey: key) {
+                frames = [cached]
+            } else if let still = TimelineCompositionBuilder.loadStill(url: url, maxPixelSize: 160) {
+                let image = UIImage(cgImage: still)
+                ThumbnailCache.images.setObject(image, forKey: key)
+                frames = [image]
+            }
+            return
+        }
+        let count = max(1, min(8, Int(width / 60)))
+        let generator = AVAssetImageGenerator(asset: AVURLAsset(url: url))
+        generator.appliesPreferredTrackTransform = true
+        generator.maximumSize = CGSize(width: 160, height: 160)
+        var result: [UIImage] = []
+        for index in 0..<count {
+            let seconds = clip.sourceIn + clip.duration * clip.look.speed * (Double(index) + 0.5) / Double(count)
+            let key = "\(url.lastPathComponent)#\(Int(seconds * 2))" as NSString
+            if let cached = ThumbnailCache.images.object(forKey: key) {
+                result.append(cached)
+            } else if let frame = try? await generator.image(at: CMTime(seconds: seconds, preferredTimescale: 600)).image {
+                let image = UIImage(cgImage: frame)
+                ThumbnailCache.images.setObject(image, forKey: key)
+                result.append(image)
+            }
+        }
+        frames = result
+    }
+}
+
+enum WaveformReader {
+    static func levels(url: URL, sourceIn: Double, duration: Double, count: Int) async throws -> [Float] {
+        let asset = AVURLAsset(url: url)
+        let tracks = try await asset.loadTracks(withMediaType: .audio)
+        guard let track = tracks.first else { return [] }
+        return try await Task.detached(priority: .utility) { () throws -> [Float] in
+            let reader = try AVAssetReader(asset: asset)
+            reader.timeRange = CMTimeRange(start: CMTime(seconds: sourceIn, preferredTimescale: 600), duration: CMTime(seconds: duration, preferredTimescale: 600))
+            let output = AVAssetReaderTrackOutput(track: track, outputSettings: [
+                AVFormatIDKey: kAudioFormatLinearPCM,
+                AVSampleRateKey: 2000,
+                AVNumberOfChannelsKey: 1,
+                AVLinearPCMBitDepthKey: 16,
+                AVLinearPCMIsFloatKey: false,
+                AVLinearPCMIsBigEndianKey: false,
+                AVLinearPCMIsNonInterleaved: false
+            ])
+            guard reader.canAdd(output) else { return [] }
+            reader.add(output)
+            guard reader.startReading() else { return [] }
+            var peaks = [Float](repeating: 0, count: count)
+            let perBar = max(1, Int(duration * 2000) / count)
+            var sampleIndex = 0
+            while let buffer = output.copyNextSampleBuffer() {
+                guard let block = CMSampleBufferGetDataBuffer(buffer) else { continue }
+                let total = CMBlockBufferGetDataLength(block) / 2
+                guard total > 0 else { continue }
+                var pcm = [Int16](repeating: 0, count: total)
+                let status = pcm.withUnsafeMutableBytes { raw in
+                    CMBlockBufferCopyDataBytes(block, atOffset: 0, dataLength: total * 2, destination: raw.baseAddress!)
+                }
+                guard status == kCMBlockBufferNoErr else { continue }
+                for value in pcm {
+                    let bar = min(count - 1, sampleIndex / perBar)
+                    peaks[bar] = max(peaks[bar], abs(Float(value)) / 32768)
+                    sampleIndex += 1
+                }
+            }
+            return peaks
+        }.value
     }
 }

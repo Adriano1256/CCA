@@ -23,6 +23,11 @@ enum AgentRequest: Equatable {
     case analyzeSound
     case motion(template: String, text: String, start: Double, duration: Double)
     case exportVideo
+    case prepare
+    case addMusic(mood: String)
+    case addSound(kind: String, time: Double)
+    case reframe
+    case undo
 }
 
 struct AgentOutcome {
@@ -42,7 +47,8 @@ enum AgentProtocol {
     static let tools: [String] = [
         "split", "delete", "ripple_delete", "move", "trim_start", "trim_end", "set_volume", "set_speed", "set_track",
         "add_text", "delete_text", "set_color", "transition", "ken_burns", "zoom", "mark_sonora", "assemble",
-        "caption_style", "ducking", "seek", "transcribe", "analyze_sound", "motion", "export"
+        "caption_style", "caption_color", "caption_size", "captions_off", "ducking", "seek", "transcribe", "analyze_sound", "motion", "export",
+        "fade", "look", "music", "sound", "reframe", "prepare", "undo"
     ]
 
     /// Gramática que obriga o modelo a responder sempre com um JSON válido neste formato.
@@ -78,9 +84,14 @@ enum AgentProtocol {
     transition(clip ou track,kind,value) kind: dissolve slideLeft slideUp zoom wipe flash; value é a duração
     ken_burns(clip ou track) zoom lento em foto; zoom(clip,value) zoom até value ao longo do clipe
     mark_sonora(clip) marca que o clipe tem fala; assemble(kind) kind: institucional ou stories, monta a timeline
-    caption_style(kind) kind: word phrase karaoke; ducking(value) volume da música sob a fala, 0.05 a 0.8
+    caption_style(kind) legenda animada, kind: karaoke box pop reveal slam word phrase; caption_color(text) cor em hex como #FFD84D; caption_size(value) 40 a 140; captions_off() tira as legendas
+    ducking(value) volume da música sob a fala, 0.05 a 0.8; fade(clip ou track,kind,value) kind: in ou out, value em segundos
+    look(clip ou track,kind) kind: natural quente frio vibrante cinema "preto e branco"
+    music(kind) coloca música da biblioteca pelo clima: emocionante inspirador "obra e trabalho" festa corporativo suave impacto
+    sound(kind,time) efeito sonoro da biblioteca: transição impacto subida clique ambiente aplauso
+    reframe() ajusta os clipes à proporção mantendo o assunto no quadro; prepare() analisa fala, música e imagens; undo() desfaz a última edição
     seek(time) move o cursor; transcribe() cria legendas; analyze_sound() detecta fala e música
-    motion(kind,text,time,duration) kind é o id do modelo de motion; export() exporta o vídeo
+    motion(kind,text,time,duration) kind é o id do modelo de motion ou o estilo de texto animado: katana impacto mola cascata glitch giro3d contorno marca elegante maquina tremor motionia doismundos energia editorial; export() exporta o vídeo
 
     Trilhas: video, broll, voice, audio (música), sfx, motion, subject.
 
@@ -103,7 +114,7 @@ enum AgentProtocol {
     }
 
     /// Resumo do projeto para a IA. Sem caminhos de arquivo e limitado para caber no contexto.
-    static func projectSummary(_ project: EditorProject, playhead: Double, selectedClip: UUID?, motionTemplates: [String] = [], maximumClips: Int = 60) -> String {
+    static func projectSummary(_ project: EditorProject, playhead: Double, selectedClip: UUID?, motionTemplates: [String] = [], libraryMoods: [String] = [], maximumClips: Int = 40) -> String {
         var lines: [String] = []
         lines.append(String(format: "Projeto \"%@\", perfil %@, duração %.1f s, cursor em %.1f s.", project.name, project.profile, project.contentEnd, playhead))
         let clips = project.clips.filter { $0.track != "subject" }.sorted { $0.start < $1.start }
@@ -112,6 +123,19 @@ enum AgentProtocol {
             let media = project.media.first { $0.id == clip.mediaID }
             let tags = (isSpeech(clip, media: media) ? " [SONORA]" : "") + (clip.id == selectedClip ? " [SELECIONADO]" : "")
             lines.append(String(format: "%d. %@ %.1f-%.1f s, volume %.2f, %@%@", index + 1, clip.track, clip.start, clip.end, clip.volume, media?.kind ?? "?", tags))
+            if let media {
+                var facts: [String] = []
+                if !media.visualTags.isEmpty { facts.append("imagem: " + media.visualTags.prefix(5).joined(separator: ", ")) }
+                if let share = media.faceShare { facts.append(String(format: "rostos %.0f%%", share * 100)) }
+                if let sound = media.soundSummary { facts.append("som: " + sound) }
+                if !media.transcript.isEmpty {
+                    let speed = max(0.01, clip.look.speed)
+                    let sourceEnd = clip.sourceIn + clip.duration * speed
+                    let spoken = media.transcript.filter { $0.start >= clip.sourceIn && $0.start < sourceEnd }.prefix(40).map(\.text).joined(separator: " ")
+                    if !spoken.isEmpty { facts.append("fala: " + spoken) }
+                }
+                if !facts.isEmpty { lines.append("   " + facts.joined(separator: " | ")) }
+            }
         }
         if clips.count > maximumClips { lines.append("... mais \(clips.count - maximumClips) clipes") }
         if !project.overlays.isEmpty {
@@ -120,11 +144,8 @@ enum AgentProtocol {
                 lines.append(String(format: "%d. \"%@\" em %.1f s por %.1f s", index + 1, String(overlay.text.prefix(40)), overlay.start, overlay.duration))
             }
         }
-        if !project.captionWords.isEmpty {
-            let speech = project.captionWords.prefix(120).map(\.text).joined(separator: " ")
-            lines.append("Fala transcrita: \(speech)")
-        }
         if !motionTemplates.isEmpty { lines.append("Modelos de motion: \(motionTemplates.joined(separator: ", "))") }
+        lines.append(libraryMoods.isEmpty ? "Biblioteca de sons: vazia." : "Biblioteca de sons: \(libraryMoods.joined(separator: ", ")).")
         return lines.joined(separator: "\n")
     }
 
@@ -286,10 +307,55 @@ enum AgentExecutor {
                 outcome.project.profile = draft.profile
                 outcome.done.append("Montagem \(draft.profile) aplicada; falas inteiras")
             case "caption_style":
-                if let kind = action.kind, ["word", "phrase", "karaoke"].contains(kind) {
+                if let kind = action.kind, CaptionAnimator.styles.contains(where: { $0.id == kind }) {
                     outcome.project.captionStyle = kind
+                    outcome.project.captionsEnabled = true
                     outcome.done.append("Estilo de legenda: \(kind)")
+                } else {
+                    outcome.blocked.append("Estilo de legenda desconhecido")
                 }
+            case "caption_color":
+                if let text = action.text, text.hasPrefix("#"), text.count == 7 {
+                    outcome.project.captionHighlightHex = text
+                    outcome.done.append("Cor de destaque da legenda alterada")
+                } else {
+                    outcome.blocked.append("caption_color: use uma cor como #FFD84D")
+                }
+            case "caption_size":
+                if let value = action.value {
+                    outcome.project.captionFontSize = min(140, max(40, value))
+                    outcome.done.append("Tamanho da legenda alterado")
+                }
+            case "captions_off":
+                outcome.project.captionsEnabled = false
+                outcome.done.append("Legendas desligadas; a transcrição continua guardada")
+            case "fade":
+                let list = targets(action)
+                guard !list.isEmpty else { outcome.blocked.append("fade: faltou o alvo"); continue }
+                for index in list {
+                    let duration = outcome.project.clips[index].duration / 2
+                    if action.kind == "in" {
+                        outcome.project.clips[index].fadeIn = min(duration, max(0, action.value ?? 1))
+                    } else {
+                        outcome.project.clips[index].fadeOut = min(duration, max(0, action.value ?? 1))
+                    }
+                }
+                outcome.done.append("Fade em \(list.count) clipe(s)")
+            case "look":
+                let list = targets(action)
+                guard !list.isEmpty, let kind = action.kind, ColorLooks.names.contains(kind) else { outcome.blocked.append("look: faltou o alvo ou o visual"); continue }
+                for index in list { ColorLooks.apply(kind, to: &outcome.project.clips[index].look) }
+                outcome.done.append("Visual \(kind) em \(list.count) clipe(s)")
+            case "music":
+                outcome.requests.append(.addMusic(mood: action.kind ?? ""))
+            case "sound":
+                outcome.requests.append(.addSound(kind: action.kind ?? "", time: action.time ?? playhead))
+            case "reframe":
+                outcome.requests.append(.reframe)
+            case "prepare":
+                outcome.requests.append(.prepare)
+            case "undo":
+                outcome.requests.append(.undo)
             case "ducking":
                 if let value = action.value {
                     outcome.project.automaticDucking = true
@@ -410,13 +476,59 @@ enum MotionImport {
     }
 
     static func isComposition(_ html: String) -> Bool {
-        html.contains("data-composition-id")
+        // HyperFrames usa data-composition-id; os prompts de texto animado usam window.seek(t).
+        html.contains("data-composition-id") || html.contains("window.seek")
     }
 
     static func duration(in html: String) -> Double? {
-        guard let regex = try? NSRegularExpression(pattern: #"data-duration\s*=\s*["']([0-9.]+)["']"#),
+        guard let regex = try? NSRegularExpression(pattern: #"(?:data-duration\s*=\s*["']|\b(?:DURATION|DURACAO|TOTAL|duration)\s*[=:]\s*)([0-9]+(?:\.[0-9]+)?)"#),
               let match = regex.firstMatch(in: html, range: NSRange(html.startIndex..., in: html)),
               let range = Range(match.range(at: 1), in: html) else { return nil }
         return Double(html[range])
+    }
+}
+
+
+/// Entende pedidos comuns sem modelo de IA, para o chat funcionar desde a primeira abertura.
+enum RuleAgent {
+    static func plan(for request: String, project: EditorProject) -> AgentPlan? {
+        let text = request.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: Locale(identifier: "pt_BR"))
+        func has(_ words: String...) -> Bool { words.contains { text.contains($0) } }
+        let percent = text.split(whereSeparator: { !$0.isNumber }).first.flatMap { Double($0) }
+
+        if has("desfaz", "desfazer", "volta como") { return AgentPlan(reply: "Desfazendo.", actions: [AgentAction(tool: "undo")]) }
+        if has("exporta", "exportar") { return AgentPlan(reply: "Exportando na qualidade escolhida.", actions: [AgentAction(tool: "export")]) }
+        if has("prepara", "analisa", "analise") { return AgentPlan(reply: "Vou analisar fala, música e imagens.", actions: [AgentAction(tool: "prepare")]) }
+        if has("transcrev") { return AgentPlan(reply: "Transcrevendo as sonoras.", actions: [AgentAction(tool: "transcribe")]) }
+        if has("story", "stories") && has("mont", "faz", "cria") { return AgentPlan(reply: "Montando a sequência de Stories.", actions: [AgentAction(tool: "assemble", kind: "stories")]) }
+        if has("institucional", "prefeitura") && has("mont", "faz", "cria", "edita") || has("monta o video", "monta esse video", "monta o videos", "edita o video") {
+            return AgentPlan(reply: "Montando no padrão institucional, com as falas inteiras.", actions: [AgentAction(tool: "assemble", kind: "institucional")])
+        }
+        if has("legenda") {
+            if has("tira", "remove", "desliga", "sem legenda") { return AgentPlan(reply: "Legendas desligadas.", actions: [AgentAction(tool: "captions_off")]) }
+            var kind = "karaoke"
+            if has("caixa") { kind = "box" } else if has("impacto", "uma palavra") { kind = "slam" } else if has("salta", "pula") { kind = "pop" } else if has("aparec") { kind = "reveal" } else if has("simples") { kind = "phrase" }
+            var actions = [AgentAction(tool: "caption_style", kind: kind)]
+            if !project.media.contains(where: { !$0.transcript.isEmpty }) { actions.insert(AgentAction(tool: "transcribe"), at: 0) }
+            return AgentPlan(reply: "Legenda animada aplicada.", actions: actions)
+        }
+        if has("broll", "b-roll", "b roll", "imagens de apoio") && has("tira o som", "sem som", "muda", "mudo") {
+            return AgentPlan(reply: "B-roll sem som.", actions: [AgentAction(tool: "set_volume", track: "broll", value: 0)])
+        }
+        if has("musica", "trilha") {
+            if has("abaixa", "mais baixo", "diminui", "volume") {
+                let value = percent.map { $0 / 100 } ?? 0.15
+                return AgentPlan(reply: "Volume da música ajustado.", actions: [AgentAction(tool: "set_volume", track: "audio", value: value)])
+            }
+            if has("coloca", "bota", "adiciona", "poe", "põe") {
+                let mood = LibraryItem.musicMoods.first { text.contains($0.folding(options: .diacriticInsensitive, locale: nil)) } ?? ""
+                return AgentPlan(reply: "Colocando música da biblioteca.", actions: [AgentAction(tool: "music", kind: mood)])
+            }
+        }
+        if has("reenquadr", "reframe", "enquadr") { return AgentPlan(reply: "Reenquadrando.", actions: [AgentAction(tool: "reframe")]) }
+        for look in ColorLooks.names where text.contains(look) && has("cor", "visual", "look", "deixa") {
+            return AgentPlan(reply: "Aplicando o visual \(look).", actions: [AgentAction(tool: "look", track: "video", kind: look)])
+        }
+        return nil
     }
 }

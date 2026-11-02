@@ -136,11 +136,11 @@ enum SmokeTest {
             let engine = MotionEngine()
             let catalog = MotionTemplate.loadCatalog()
             record("Catálogo de motion carregado", catalog.count >= 15, "\(catalog.count) modelos")
-            for (id, time) in [("abertura-institucional", 2.0), ("tarja-nome", 2.0)] {
+            for (id, time) in [("abertura-institucional", 2.0), ("tarja-nome", 2.0), ("kinetic", 1.5)] {
                 guard let template = catalog.first(where: { $0.id == id }) else { continue }
                 do {
                     let output = folder.appendingPathComponent("motion-\(id).mov")
-                    try await engine.renderTemplate(template, values: ["titulo": "Asfalto novo", "subtitulo": "Bairro Centro", "cor1": "#0B6E4F", "cor2": "#FFFFFF"], duration: 3, width: 1280, height: 720, frameRate: 30, output: output)
+                    try await engine.renderTemplate(template, values: ["titulo": "Asfalto novo", "subtitulo": "Bairro Centro", "cor1": "#0B6E4F", "cor2": "#FFFFFF", "estilo": "mola"], duration: 3, width: 1280, height: 720, frameRate: 30, output: output)
                     let picture = try await frame(of: output, at: time)
                     try UIImage(cgImage: picture).pngData()?.write(to: folder.appendingPathComponent("motion-\(id).png"))
                     let seconds = try await AVURLAsset(url: output).load(.duration).seconds
@@ -174,6 +174,22 @@ enum SmokeTest {
             store.createProject(named: "Outro projeto")
             store.openProject(savedID)
             record("Projeto salvo e reaberto", store.project.clips.count >= 3 && store.project.overlays.count == 1, "\(store.project.clips.count) clipes")
+            if let index = store.project.media.firstIndex(where: { $0.kind == "Vídeo" }) {
+                store.project.media[index].transcript = [
+                    TranscriptWord(text: "Agora", start: 0.2, end: 0.6), TranscriptWord(text: "a", start: 0.6, end: 0.8),
+                    TranscriptWord(text: "rua", start: 0.8, end: 1.2), TranscriptWord(text: "tem", start: 1.2, end: 1.6), TranscriptWord(text: "asfalto", start: 1.6, end: 2.4)
+                ]
+                store.saveProject()
+            }
+            record("Legenda nasce da transcrição", !store.project.captionWords.isEmpty, "\(store.project.captionWords.count) palavras")
+            for style in CaptionAnimator.styles {
+                var captioned = store.project
+                captioned.captionStyle = style.id
+                let captionURL = try await renderer.export(project: captioned, baseDirectory: store.baseDirectoryURL, width: 720, height: 1280)
+                let picture = try await frame(of: captionURL, at: 1.4)
+                try UIImage(cgImage: picture).pngData()?.write(to: folder.appendingPathComponent("legenda-\(style.id).png"))
+            }
+            record("Legendas animadas exportadas", true, "\(CaptionAnimator.styles.count) estilos")
             let draft = LocalDirectorService.makePlan(command: "monte um institucional", project: store.project).timelineDraft
             record("Diretor monta rascunho", draft != nil, "\(draft?.segments.count ?? 0) trechos")
         } catch {

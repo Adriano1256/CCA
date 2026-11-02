@@ -280,10 +280,9 @@ final class FrameRenderer {
     }
 
     /// Transforma texto em imagem, com cache para não redesenhar a cada quadro.
-    private func textImage(_ attributed: NSAttributedString, key: String, maxWidth: CGFloat, background: UIColor?) -> CIImage? {
+    private func textImage(_ attributed: NSAttributedString, key: String, maxWidth: CGFloat, background: UIColor?, padding: CGFloat = 24) -> CIImage? {
         if let cached = textImages.object(forKey: key as NSString) { return cached }
         let bounds = attributed.boundingRect(with: CGSize(width: maxWidth, height: .greatestFiniteMagnitude), options: [.usesLineFragmentOrigin, .usesFontLeading], context: nil)
-        let padding: CGFloat = 24
         let size = CGSize(width: ceil(bounds.width) + padding * 2, height: ceil(bounds.height) + padding * 2)
         guard size.width > 0, size.height > 0 else { return nil }
         let format = UIGraphicsImageRendererFormat()
@@ -385,44 +384,59 @@ final class FrameRenderer {
     }
 
     private func drawCaptions(scene: CompositionScene, time: Double, over canvas: CIImage) -> CIImage {
-        let words = scene.sortedCaptions
-        guard !words.isEmpty, let first = words.first(where: { time >= $0.start && time < $0.start + $0.duration }) else { return canvas }
+        let project = scene.project
+        guard project.captionsEnabled, let caption = CaptionAnimator.frame(style: project.captionStyle, words: scene.sortedCaptions, at: time) else { return canvas }
         let size = scene.renderSize
         let frame = CGRect(origin: .zero, size: size)
-        let style = scene.project.captionStyle
-        let baseFont = font(style: "heavy", size: CGFloat(first.fontSize))
+        let fontSize = CGFloat(project.captionFontSize * caption.sizeFactor)
+        let captionFont = font(style: project.captionFontStyle, size: fontSize)
         let shadow = NSShadow()
         shadow.shadowColor = UIColor.black
-        shadow.shadowBlurRadius = CGFloat(first.fontSize) * 0.1
-        shadow.shadowOffset = CGSize(width: 0, height: CGFloat(first.fontSize) * 0.04)
-        let paragraph = NSMutableParagraphStyle()
-        paragraph.alignment = .center
-        let normal: [NSAttributedString.Key: Any] = [.font: baseFont, .foregroundColor: FrameRenderer.uiColor(hex: first.colorHex), .paragraphStyle: paragraph, .shadow: shadow]
+        shadow.shadowBlurRadius = fontSize * 0.12
+        shadow.shadowOffset = CGSize(width: 0, height: fontSize * 0.04)
+        let textColor = FrameRenderer.uiColor(hex: project.captionTextHex)
+        let highlight = FrameRenderer.uiColor(hex: project.captionHighlightHex)
 
-        let text = NSMutableAttributedString()
-        let key: String
-        if style == "word" {
-            text.append(NSAttributedString(string: first.text, attributes: normal))
-            key = "c|w|\(first.fontSize)|\(first.colorHex)|\(first.text)"
-        } else if let phrase = CaptionLayout.phrase(in: words, at: time) {
-            var active = normal
-            if style == "karaoke" { active[.foregroundColor] = FrameRenderer.uiColor(hex: scene.project.captionHighlightHex) }
-            for (index, word) in phrase.words.enumerated() {
-                if index > 0 { text.append(NSAttributedString(string: " ", attributes: normal)) }
-                text.append(NSAttributedString(string: word, attributes: index == phrase.activeIndex ? active : normal))
+        let images: [CIImage?] = caption.words.map { word in
+            // Na caixa, a palavra fica escura sobre a cor de destaque, para dar leitura.
+            let color = word.hasBox ? UIColor.black : (word.isActive ? highlight : textColor)
+            let attributes: [NSAttributedString.Key: Any] = word.hasBox
+                ? [.font: captionFont, .foregroundColor: color]
+                : [.font: captionFont, .foregroundColor: color, .shadow: shadow]
+            let key = "c|\(project.captionFontStyle)|\(fontSize)|\(word.hasBox ? "box\(project.captionHighlightHex)" : word.isActive ? project.captionHighlightHex : project.captionTextHex)|\(word.text)"
+            return textImage(NSAttributedString(string: word.text, attributes: attributes), key: key, maxWidth: size.width * 0.88, background: word.hasBox ? highlight : nil, padding: fontSize * 0.14)
+        }
+
+        // Linhas centralizadas que quebram na área segura.
+        let maxWidth = size.width * 0.88
+        var lines: [[Int]] = [[]]
+        var used: CGFloat = 0
+        for (index, image) in images.enumerated() {
+            let width = image?.extent.width ?? 0
+            if used + width > maxWidth, !(lines.last ?? []).isEmpty {
+                lines.append([])
+                used = 0
             }
-            key = "c|\(style)|\(first.fontSize)|\(first.colorHex)|\(scene.project.captionHighlightHex)|\(phrase.words.joined(separator: " "))|\(style == "karaoke" ? phrase.activeIndex : -1)"
-        } else {
-            return canvas
+            lines[lines.count - 1].append(index)
+            used += width
         }
-        guard let image = textImage(text, key: key, maxWidth: size.width * 0.88, background: nil) else { return canvas }
-        var state = LayerState()
-        if style == "word", first.animation == "pop" {
-            state = TextMotion.state(kind: "pop", time: time - first.start, duration: 10, entrance: 0.18)
+        let lineHeight = (images.compactMap { $0?.extent.height }.max() ?? fontSize) * 0.92
+        let vertical = project.captionVertical ?? CaptionLayout.defaultVertical(width: Double(size.width), height: Double(size.height))
+        let centerY = size.height * CGFloat(1 - vertical)
+        var result = canvas
+        for (lineIndex, line) in lines.enumerated() {
+            let total = line.reduce(CGFloat(0)) { $0 + (images[$1]?.extent.width ?? 0) }
+            var x = (size.width - total) / 2
+            let y = centerY + (CGFloat(lines.count - 1) / 2 - CGFloat(lineIndex)) * lineHeight
+            for index in line {
+                guard let image = images[index] else { continue }
+                let point = CGPoint(x: x + image.extent.width / 2, y: y)
+                let moved = image.transformed(by: CGAffineTransform(translationX: point.x - image.extent.width / 2, y: point.y - image.extent.height / 2))
+                result = composite(moved, state: caption.words[index].state, center: point, frame: frame, over: result)
+                x += image.extent.width
+            }
         }
-        let center = CGPoint(x: size.width / 2, y: size.height * CGFloat(1 - first.verticalPosition))
-        let moved = image.transformed(by: CGAffineTransform(translationX: center.x - image.extent.width / 2, y: center.y - image.extent.height / 2))
-        return composite(moved, state: state, center: center, frame: frame, over: canvas)
+        return result
     }
 }
 

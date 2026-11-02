@@ -12,7 +12,9 @@ struct MotionTemplate: Identifiable, Codable, Hashable {
     var transparent: Bool
     var fields: [String]
 
-    static let fieldTitles = ["titulo": "Título", "subtitulo": "Subtítulo", "numero": "Número"]
+    static let fieldTitles = ["titulo": "Título", "subtitulo": "Subtítulo", "numero": "Número", "estilo": "Estilo", "fundo": "Cor de fundo (vazio = transparente)"]
+    /// Estilos do texto animado livre; a IA também escolhe por estes nomes.
+    static let kineticStyles = ["katana", "impacto", "mola", "cascata", "glitch", "giro3d", "contorno", "marca", "elegante", "maquina", "tremor", "motionia", "doismundos", "energia", "editorial"]
 
     static func loadCatalog() -> [MotionTemplate] {
         guard let url = Bundle.main.url(forResource: "catalog", withExtension: "json", subdirectory: "Motion"),

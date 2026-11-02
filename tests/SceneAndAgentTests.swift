@@ -15,7 +15,8 @@ enum SceneAndAgentTests {
         grammarHasAllTools(); promptFormats(); parsesPlanWithNoise(); agentNeverCutsSpeech(); agentEdits()
         agentGroupsByTrack(); agentReportsUnknownTool(); agentDoesNotChangeOriginal(); summaryHasNoPaths(); oldClipDecodes()
         openingFollowsBeats(); modelRecommendation(); motionImportRewrite(); exportOptions()
-        print("SceneAndAgent: 32 checks passed")
+        captionsFollowEdits(); captionGroups(); captionStyles(); cleanerDropsNoise(); reframeKeepsSubject(); ruleAgentUnderstands(); looksApply(); summaryKnowsImages()
+        print("SceneAndAgent: 40 checks passed")
     }
 
     static func keyframesInterpolate() {
@@ -303,6 +304,8 @@ enum SceneAndAgentTests {
         precondition(MotionImport.prepare(html: "<script src=\"https://x.com/a.js\"></script>", libraryPath: "../lib").warnings.count == 1, "Avisa sobre o que depende de internet")
         precondition(MotionImport.isComposition("<div data-composition-id=\"a\" data-duration=\"3\">"), "Reconhece composição")
         precondition(MotionImport.duration(in: "<div data-composition-id=\"a\" data-duration=\"3.5\">") == 3.5, "Lê duração")
+        precondition(MotionImport.isComposition("<script>window.seek = function(t){}</script>"), "Reconhece composição com window.seek")
+        precondition(MotionImport.duration(in: "<script>const DURATION = 12.5; window.seek = f</script>") == 12.5, "Lê duração do prompt de texto animado")
         precondition(!MotionImport.isComposition("<p>oi</p>"), "HTML comum não vale")
     }
 
@@ -331,5 +334,92 @@ enum SceneAndAgentTests {
         options.frameRate = 25
         precondition(options.timing(forNominalRates: [60]) == FrameTiming(value: 1, timescale: 25), "Escolha manual vence")
         precondition(ExportOptions().estimatedBytes(width: 1920, height: 1080, framesPerSecond: 30, duration: 60) > 200_000_000, "Estimativa")
+    }
+
+    static func captionsFollowEdits() {
+        var project = sample()
+        let index = project.media.firstIndex { $0.isSonora }!
+        project.media[index].transcript = [TranscriptWord(text: "a", start: 1, end: 2), TranscriptWord(text: "rua", start: 5, end: 6), TranscriptWord(text: "nova", start: 25, end: 26)]
+        var words = CaptionBuilder.timelineWords(project: project)
+        precondition(words.map(\.text) == ["a", "rua"], "Fala fora do clipe não aparece: \(words.map(\.text))")
+        let clipIndex = project.clips.firstIndex { $0.label == "fala" }!
+        project.clips[clipIndex].start = 100
+        project.clips[clipIndex].sourceIn = 4
+        words = CaptionBuilder.timelineWords(project: project)
+        precondition(words.first?.text == "rua" && close(words.first!.start, 101), "A legenda acompanha o corte e a posição: \(words)")
+        project.clips[clipIndex].look.speed = 2
+        words = CaptionBuilder.timelineWords(project: project)
+        precondition(close(words.first!.start, 100.5), "A legenda acompanha a velocidade")
+        project.captionsEnabled = false
+        precondition(CaptionBuilder.timelineWords(project: project).isEmpty, "Desligada não aparece")
+    }
+
+    static func captionGroups() {
+        let words = ["Olá", "gente.", "A", "rua", "nova", "chegou", "aqui", "hoje"].enumerated().map { CaptionWord(text: $0.element, start: Double($0.offset) * 0.3, duration: 0.25) }
+        let groups = CaptionLayout.groups(words, maximumWords: 4)
+        precondition(groups == [0..<2, 2..<6, 6..<8], "Quebra em frase e limite: \(groups)")
+        var paused = words
+        for index in 5..<8 { paused[index].start += 2 }
+        precondition(CaptionLayout.groups(paused, maximumWords: 9).count == 3, "Quebra na pausa")
+        precondition(CaptionLayout.phrase(in: words, at: 0.28)?.activeIndex == 0, "Entre palavras a frase continua")
+        precondition(CaptionLayout.defaultVertical(width: 1080, height: 1920) < CaptionLayout.defaultVertical(width: 1920, height: 1080), "No vertical fica mais alta")
+    }
+
+    static func captionStyles() {
+        let words = ["a", "rua", "nova"].enumerated().map { CaptionWord(text: $0.element, start: Double($0.offset), duration: 0.9) }
+        for style in CaptionAnimator.styles {
+            precondition(CaptionAnimator.frame(style: style.id, words: words, at: 1.5) != nil, "\(style.id) mostra algo")
+            precondition(CaptionAnimator.frame(style: style.id, words: words, at: 9) == nil, "\(style.id) some sem fala")
+        }
+        let karaoke = CaptionAnimator.frame(style: "karaoke", words: words, at: 1.5)!
+        precondition(karaoke.words.count == 3 && karaoke.words[1].isActive && !karaoke.words[0].isActive, "Karaokê destaca a palavra falada")
+        precondition(CaptionAnimator.frame(style: "box", words: words, at: 1.5)!.words[1].hasBox, "Caixa na palavra")
+        let reveal = CaptionAnimator.frame(style: "reveal", words: words, at: 0.5)!
+        precondition(reveal.words[0].state.opacity > 0 && reveal.words[2].state.opacity == 0, "Aparece ao falar")
+        let slam = CaptionAnimator.frame(style: "slam", words: words, at: 1.5)!
+        precondition(slam.words.count == 1 && slam.words[0].text == "RUA", "Impacto: uma palavra em maiúsculas")
+        precondition(CaptionAnimator.frame(style: "pop", words: words, at: 1.5)!.words[1].state.scale > 1.1, "Palavra salta")
+    }
+
+    static func cleanerDropsNoise() {
+        let words = [TranscriptWord(text: "[Música]", start: 0, end: 1), TranscriptWord(text: " olá ", start: 2, end: 3), TranscriptWord(text: "obrigado", start: 50, end: 51)]
+        let clean = TranscriptCleaner.clean(words, speech: [AudioDuckingRange(start: 1.5, end: 4)])
+        precondition(clean.map(\.text) == ["olá"], "Tira marcações e fala inventada no silêncio: \(clean)")
+    }
+
+    static func reframeKeepsSubject() {
+        let left = Reframe.offset(imageWidth: 1920, imageHeight: 1080, frameWidth: 1080, frameHeight: 1920, interestX: 0.25, interestY: 0.5)
+        precondition(left.x > 0 && close(left.y, 0), "Assunto à esquerda: o clipe anda para a direita")
+        let extreme = Reframe.offset(imageWidth: 1920, imageHeight: 1080, frameWidth: 1080, frameHeight: 1920, interestX: 0, interestY: 0.5)
+        let scaled = 1920.0 * (1920.0 / 1080.0)
+        precondition(extreme.x <= (scaled - 1080) / 1080 / 2 + 0.001, "Sem borda preta")
+    }
+
+    static func ruleAgentUnderstands() {
+        let project = sample()
+        precondition(RuleAgent.plan(for: "Monta o vídeo institucional", project: project)?.actions.first?.kind == "institucional", "Montagem")
+        precondition(RuleAgent.plan(for: "faz os stories", project: project)?.actions.first?.kind == "stories", "Stories")
+        let caption = RuleAgent.plan(for: "coloca legenda animada com caixa", project: project)!
+        precondition(caption.actions.first?.tool == "transcribe" && caption.actions.last?.kind == "box", "Transcreve e aplica o estilo")
+        precondition(RuleAgent.plan(for: "abaixa a música para 10%", project: project)?.actions.first?.value == 0.1, "Volume")
+        precondition(RuleAgent.plan(for: "tira o som do b-roll", project: project)?.actions.first?.track == "broll", "B-roll")
+        precondition(RuleAgent.plan(for: "exporta", project: project)?.actions.first?.tool == "export", "Exportar")
+        precondition(RuleAgent.plan(for: "qual o sentido da vida", project: project) == nil, "Não finge que entendeu")
+    }
+
+    static func looksApply() {
+        let outcome = AgentExecutor.apply(AgentPlan(reply: "", actions: [AgentAction(tool: "look", track: "video", kind: "preto e branco"), AgentAction(tool: "caption_style", kind: "box"), AgentAction(tool: "fade", track: "audio", value: 2, kind: "out")]), to: sample(), playhead: 0)
+        precondition(outcome.project.clips.filter { $0.track == "video" }.allSatisfy { $0.look.saturation == 0 }, "Visual")
+        precondition(outcome.project.captionStyle == "box", "Legenda")
+        precondition(outcome.project.clips.first { $0.track == "audio" }?.fadeOut == 2, "Fade")
+    }
+
+    static func summaryKnowsImages() {
+        var project = sample()
+        project.media[1].visualTags = ["road", "machine"]
+        project.media[1].faceShare = 0.2
+        project.media[0].transcript = [TranscriptWord(text: "asfalto", start: 1, end: 2)]
+        let summary = AgentProtocol.projectSummary(project, playhead: 0, selectedClip: nil, libraryMoods: ["festa"])
+        precondition(summary.contains("road") && summary.contains("asfalto") && summary.contains("festa"), "A IA sabe o que tem nas imagens, a fala e a biblioteca")
     }
 }

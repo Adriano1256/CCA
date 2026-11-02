@@ -140,7 +140,7 @@ extension ModelManager: URLSessionDownloadDelegate {
     }
 }
 
-/// Conversa com a IA local. Ela só propõe; nada muda no projeto antes de o usuário aprovar.
+/// Conversa com a IA local. O plano dela entra direto na timeline e pode ser desfeito; fala nunca é cortada por ela.
 @MainActor
 final class AgentController: ObservableObject {
     struct Message: Identifiable {
@@ -149,11 +149,14 @@ final class AgentController: ObservableObject {
         var text: String
         var plan: AgentPlan?
         var applied = false
+        var done: [String] = []
     }
 
     @Published private(set) var messages: [Message] = []
     @Published private(set) var isThinking = false
     @Published private(set) var tokens = 0
+    /// Muda quando chega um plano novo, para o editor aplicar na timeline.
+    @Published private(set) var pendingPlanCount = 0
 
     private var engine: LlamaEngine?
     private var engineModelID: String?
@@ -188,16 +191,28 @@ final class AgentController: ObservableObject {
 
     func stop() { stopFlag.isSet = true }
 
-    func markApplied(_ id: UUID) {
+    func markApplied(_ id: UUID, outcome: [String]) {
         guard let index = messages.firstIndex(where: { $0.id == id }) else { return }
         messages[index].applied = true
+        messages[index].done = outcome
+    }
+
+    /// Resposta que não precisou do modelo.
+    func addExchange(request: String, plan: AgentPlan) {
+        messages.append(Message(fromUser: true, text: request))
+        receive(plan)
+    }
+
+    private func receive(_ plan: AgentPlan) {
+        messages.append(Message(fromUser: false, text: plan.reply, plan: plan.actions.isEmpty ? nil : plan))
+        if !plan.actions.isEmpty { pendingPlanCount += 1 }
     }
 
     func addNote(_ text: String) {
         messages.append(Message(fromUser: false, text: text))
     }
 
-    func ask(_ text: String, model: LocalModel, modelURL: URL, summary: String) {
+    func ask(_ text: String, model: LocalModel, modelURL: URL, summary: String, fallback: AgentPlan? = nil) {
         guard !isThinking else { return }
         messages.append(Message(fromUser: true, text: text))
         isThinking = true
@@ -222,33 +237,26 @@ final class AgentController: ObservableObject {
                 engine = result.0
                 engineModelID = model.id
                 if let plan = AgentProtocol.parsePlan(result.1) {
-                    messages.append(Message(fromUser: false, text: plan.reply, plan: plan.actions.isEmpty ? nil : plan))
+                    receive(plan)
                 } else if flag.isSet {
                     messages.append(Message(fromUser: false, text: "Parado."))
                 } else {
-                    messages.append(Message(fromUser: false, text: "Não consegui montar uma resposta válida. Tente pedir de outro jeito."))
+                    if let fallback {
+                        receive(fallback)
+                    } else {
+                        messages.append(Message(fromUser: false, text: "Não consegui montar uma resposta válida. Tente pedir de outro jeito."))
+                    }
                 }
             } catch {
                 engine = nil
                 engineModelID = nil
-                messages.append(Message(fromUser: false, text: error.localizedDescription))
+                if let fallback {
+                    receive(fallback)
+                } else {
+                    messages.append(Message(fromUser: false, text: error.localizedDescription))
+                }
             }
             isThinking = false
         }
-    }
-}
-
-extension AgentAction {
-    /// Descrição curta para o usuário conferir antes de aprovar.
-    var readable: String {
-        var parts = [tool]
-        if let clip { parts.append("clipe \(clip)") }
-        if let track { parts.append("trilha \(track)") }
-        if let time { parts.append(String(format: "em %.1f s", time)) }
-        if let value { parts.append(String(format: "valor %.2f", value)) }
-        if let duration { parts.append(String(format: "por %.1f s", duration)) }
-        if let kind { parts.append(kind) }
-        if let text { parts.append("\"\(text)\"") }
-        return parts.joined(separator: " · ")
     }
 }

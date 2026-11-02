@@ -341,25 +341,186 @@ enum CaptionLayout {
         var key: String
     }
 
-    /// Agrupa as palavras em frases curtas e indica a palavra falada agora (estilo karaokê).
-    static func phrase(in words: [CaptionWord], at time: Double, maximumWords: Int = 5, maximumGap: Double = 0.7) -> Phrase? {
-        guard let index = words.firstIndex(where: { time >= $0.start && time < $0.start + $0.duration }) else { return nil }
-        var groupStart = 0
-        var cursor = 0
-        while cursor <= index {
-            var end = cursor
-            while end + 1 < words.count, end + 1 - cursor < maximumWords,
-                  words[end + 1].start - (words[end].start + words[end].duration) <= maximumGap {
-                end += 1
+    /// Divide a fala em grupos curtos, quebrando em fim de frase, em pausa ou no limite de palavras.
+    static func groups(_ words: [CaptionWord], maximumWords: Int = 5, maximumGap: Double = 0.35) -> [Range<Int>] {
+        var result: [Range<Int>] = []
+        var start = 0
+        guard !words.isEmpty else { return [] }
+        for index in words.indices {
+            let reachedLimit = index - start + 1 >= maximumWords
+            let last = index == words.count - 1
+            let endsSentence = [".", "!", "?"].contains { words[index].text.hasSuffix($0) }
+            let pause = last ? false : words[index + 1].start - (words[index].start + words[index].duration) >= maximumGap
+            if reachedLimit || last || endsSentence || pause {
+                result.append(start..<(index + 1))
+                start = index + 1
             }
-            if index <= end {
-                groupStart = cursor
-                let group = words[cursor...end].map(\.text)
-                return Phrase(words: group, activeIndex: index - groupStart, key: "\(cursor)-\(index)")
-            }
-            cursor = end + 1
+        }
+        return result
+    }
+
+    /// Frase visível no instante e a palavra falada agora. A frase fica na tela entre as palavras, sem piscar.
+    static func phrase(in words: [CaptionWord], at time: Double, maximumWords: Int = 5, maximumGap: Double = 0.35) -> Phrase? {
+        for group in groups(words, maximumWords: maximumWords, maximumGap: maximumGap) {
+            let first = words[group.lowerBound], last = words[group.upperBound - 1]
+            guard time >= first.start, time < last.start + last.duration else { continue }
+            let active = (group.lowerBound..<group.upperBound).last { words[$0].start <= time } ?? group.lowerBound
+            return Phrase(words: words[group].map(\.text), activeIndex: active - group.lowerBound, key: "\(group.lowerBound)-\(active)")
         }
         return nil
+    }
+
+    /// Posição segura: no vertical fica mais alta, longe da interface das redes sociais.
+    static func defaultVertical(width: Double, height: Double) -> Double {
+        height > width ? 0.68 : 0.86
+    }
+}
+
+/// Monta as legendas da timeline a partir da fala de cada arquivo.
+enum CaptionBuilder {
+    static func timelineWords(project: EditorProject) -> [CaptionWord] {
+        guard project.captionsEnabled else { return [] }
+        var result: [CaptionWord] = []
+        for clip in project.clips where clip.track != "broll" && clip.track != "audio" && clip.track != "sfx" && clip.track != "motion" && clip.track != "subject" && clip.volume > 0.05 {
+            guard let media = project.media.first(where: { $0.id == clip.mediaID }), !media.transcript.isEmpty else { continue }
+            let speed = max(0.01, clip.look.speed)
+            for word in media.transcript {
+                let start = clip.start + (word.start - clip.sourceIn) / speed
+                let end = clip.start + (word.end - clip.sourceIn) / speed
+                // A palavra precisa estar inteira dentro do clipe; meia palavra na legenda confunde.
+                let center = (start + end) / 2
+                guard center >= clip.start, center < clip.end else { continue }
+                let clampedStart = max(clip.start, start)
+                let clampedEnd = min(clip.end, end)
+                guard clampedEnd > clampedStart else { continue }
+                result.append(CaptionWord(text: word.text, start: clampedStart, duration: clampedEnd - clampedStart))
+            }
+        }
+        return result.sorted { $0.start < $1.start }
+    }
+}
+
+enum TranscriptCleaner {
+    /// Tira marcações como [Música] e palavras "inventadas" durante silêncio, um defeito conhecido do Whisper.
+    static func clean(_ words: [TranscriptWord], speech: [AudioDuckingRange]) -> [TranscriptWord] {
+        words.compactMap { word in
+            let text = word.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !text.isEmpty, word.end > word.start else { return nil }
+            if let first = text.first, "[(♪<*".contains(first) { return nil }
+            if !speech.isEmpty {
+                let near = speech.contains { word.start < $0.end + 0.6 && word.end > $0.start - 0.6 }
+                if !near { return nil }
+            }
+            return TranscriptWord(text: text, start: word.start, end: word.end)
+        }
+    }
+}
+
+/// Animação das legendas, nos estilos que os editores usam nas redes.
+enum CaptionAnimator {
+    struct WordVisual: Equatable {
+        var text: String
+        var state: LayerState
+        var isActive: Bool
+        var hasBox: Bool
+    }
+
+    struct Frame: Equatable {
+        var words: [WordVisual]
+        var sizeFactor: Double
+    }
+
+    static let styles: [(id: String, name: String)] = [
+        ("karaoke", "Karaokê"), ("box", "Caixa na palavra"), ("pop", "Palavra salta"), ("reveal", "Aparece ao falar"),
+        ("slam", "Impacto, uma palavra"), ("word", "Uma palavra"), ("phrase", "Frase simples")
+    ]
+
+    static func frame(style: String, words: [CaptionWord], at time: Double) -> Frame? {
+        switch style {
+        case "word", "slam":
+            guard let word = words.first(where: { time >= $0.start && time < $0.start + $0.duration }) else { return nil }
+            let local = time - word.start
+            var state = LayerState()
+            let isSlam = style == "slam"
+            if isSlam {
+                let p = Easing.clamp(local / 0.12)
+                state.scale = 1.9 - 0.9 * Easing.outCubic(p)
+                state.opacity = Easing.clamp(p * 3)
+            } else {
+                let p = Easing.clamp(local / 0.16)
+                state.scale = 0.75 + 0.25 * Easing.outBack(p)
+                state.opacity = Easing.clamp(p * 3)
+            }
+            let text = isSlam ? word.text.uppercased() : word.text
+            return Frame(words: [WordVisual(text: text, state: state, isActive: isSlam, hasBox: false)], sizeFactor: isSlam ? 1.5 : 1.2)
+        default:
+            let maximum = style == "reveal" ? 6 : style == "phrase" ? 7 : 4
+            for group in CaptionLayout.groups(words, maximumWords: maximum) {
+                let first = words[group.lowerBound], last = words[group.upperBound - 1]
+                guard time >= first.start, time < last.start + last.duration else { continue }
+                let activeIndex = (group.lowerBound..<group.upperBound).last { words[$0].start <= time } ?? group.lowerBound
+                var result: [WordVisual] = []
+                for index in group {
+                    let word = words[index]
+                    var state = LayerState()
+                    let isActive = index == activeIndex
+                    let local = time - word.start
+                    switch style {
+                    case "reveal":
+                        if local < 0 {
+                            state.opacity = 0
+                        } else {
+                            let p = Easing.clamp(local / 0.14)
+                            state.opacity = p
+                            state.offsetY = 0.012 * (1 - Easing.outCubic(p))
+                        }
+                    case "pop":
+                        if isActive {
+                            let p = Easing.clamp(local / 0.14)
+                            state.scale = 1 + 0.22 * Easing.outBack(p)
+                        }
+                    case "phrase":
+                        state.opacity = Easing.clamp((time - first.start) / 0.1)
+                    default:
+                        break
+                    }
+                    let highlights = style != "phrase" && isActive
+                    result.append(WordVisual(text: word.text, state: state, isActive: highlights, hasBox: style == "box" && isActive))
+                }
+                return Frame(words: result, sizeFactor: 1)
+            }
+            return nil
+        }
+    }
+}
+
+/// Reenquadra um clipe na proporção final, mantendo no quadro o ponto de interesse.
+enum Reframe {
+    /// `interestX` e `interestY` vão de 0 a 1 na imagem. Devolve o deslocamento do clipe sem deixar borda preta.
+    static func offset(imageWidth: Double, imageHeight: Double, frameWidth: Double, frameHeight: Double, interestX: Double, interestY: Double) -> (x: Double, y: Double) {
+        guard imageWidth > 0, imageHeight > 0, frameWidth > 0, frameHeight > 0 else { return (0, 0) }
+        let scale = max(frameWidth / imageWidth, frameHeight / imageHeight)
+        let extraX = max(0, imageWidth * scale - frameWidth) / frameWidth
+        let extraY = max(0, imageHeight * scale - frameHeight) / frameHeight
+        let x = (0.5 - interestX) * imageWidth * scale / frameWidth
+        let y = (interestY - 0.5) * imageHeight * scale / frameHeight
+        return (min(extraX / 2, max(-extraX / 2, x)), min(extraY / 2, max(-extraY / 2, y)))
+    }
+}
+
+/// Visuais prontos de cor.
+enum ColorLooks {
+    static let names = ["natural", "quente", "frio", "vibrante", "cinema", "preto e branco"]
+
+    static func apply(_ name: String, to look: inout ClipLook) {
+        switch name {
+        case "quente": look.temperature = 5200; look.saturation = 1.08; look.contrast = 1.04; look.tint = 0; look.exposure = 0; look.shadows = 0; look.highlights = 1
+        case "frio": look.temperature = 8000; look.saturation = 0.98; look.contrast = 1.04; look.tint = 0; look.exposure = 0; look.shadows = 0; look.highlights = 1
+        case "vibrante": look.saturation = 1.3; look.contrast = 1.1; look.temperature = 6500; look.tint = 0; look.exposure = 0.05; look.shadows = 0.1; look.highlights = 1
+        case "cinema": look.saturation = 0.88; look.contrast = 1.18; look.temperature = 6100; look.tint = -6; look.exposure = -0.05; look.shadows = -0.1; look.highlights = 0.85
+        case "preto e branco": look.saturation = 0; look.contrast = 1.15; look.temperature = 6500; look.tint = 0; look.exposure = 0; look.shadows = 0; look.highlights = 1
+        default: look.saturation = 1; look.contrast = 1; look.temperature = 6500; look.tint = 0; look.exposure = 0; look.shadows = 0; look.highlights = 1
+        }
     }
 }
 

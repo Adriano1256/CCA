@@ -2,6 +2,12 @@ import Foundation
 
 // Modelo do projeto. Usa somente Foundation para poder ser testado fora do iOS.
 
+struct TranscriptWord: Codable, Hashable {
+    var text: String
+    var start: Double
+    var end: Double
+}
+
 struct LocalMedia: Identifiable, Codable, Hashable {
     var id: UUID = UUID()
     var name: String
@@ -20,10 +26,18 @@ struct LocalMedia: Identifiable, Codable, Hashable {
     var soundSummary: String?
     /// Batidas detectadas em músicas, em segundos.
     var beats: [Double] = []
+    /// Fala transcrita em segundos da mídia original. As legendas da timeline são calculadas a partir daqui,
+    /// então continuam certas depois de cortes, trocas de lugar e mudanças de velocidade.
+    var transcript: [TranscriptWord] = []
+    /// O que aparece nas imagens, detectado no aparelho.
+    var visualTags: [String] = []
+    /// Fração das amostras em que há rosto visível.
+    var faceShare: Double?
+    var soundAnalyzed = false
 
-    enum CodingKeys: String, CodingKey { case id, name, relativePath, kind, byteCount, importOrder, duration, isSonora, isDerived, speechRanges, soundSummary, beats }
+    enum CodingKeys: String, CodingKey { case id, name, relativePath, kind, byteCount, importOrder, duration, isSonora, isDerived, speechRanges, soundSummary, beats, transcript, visualTags, faceShare, soundAnalyzed }
 
-    init(id: UUID = UUID(), name: String, relativePath: String, kind: String, byteCount: Int64, importOrder: Int, duration: Double?, isSonora: Bool = false, isDerived: Bool = false) {
+    init(id: UUID = UUID(), name: String, relativePath: String, kind: String, byteCount: Int64, importOrder: Int, duration: Double?, isSonora: Bool = false, isDerived: Bool = false, beats: [Double] = []) {
         self.id = id
         self.name = name
         self.relativePath = relativePath
@@ -33,6 +47,7 @@ struct LocalMedia: Identifiable, Codable, Hashable {
         self.duration = duration
         self.isSonora = isSonora
         self.isDerived = isDerived
+        self.beats = beats
     }
 
     init(from decoder: Decoder) throws {
@@ -49,6 +64,10 @@ struct LocalMedia: Identifiable, Codable, Hashable {
         speechRanges = try values.decodeIfPresent([AudioDuckingRange].self, forKey: .speechRanges) ?? []
         soundSummary = try values.decodeIfPresent(String.self, forKey: .soundSummary)
         beats = try values.decodeIfPresent([Double].self, forKey: .beats) ?? []
+        transcript = try values.decodeIfPresent([TranscriptWord].self, forKey: .transcript) ?? []
+        visualTags = try values.decodeIfPresent([String].self, forKey: .visualTags) ?? []
+        faceShare = try values.decodeIfPresent(Double.self, forKey: .faceShare)
+        soundAnalyzed = try values.decodeIfPresent(Bool.self, forKey: .soundAnalyzed) ?? false
     }
 }
 
@@ -252,6 +271,13 @@ struct EditorProject: Codable {
     var clientID: UUID?
     var captionStyle: String = "karaoke"
     var captionHighlightHex: String = "#FFD84D"
+    var captionTextHex: String = "#FFFFFF"
+    var captionFontSize: Double = 78
+    var captionFontStyle: String = "heavy"
+    /// Altura da legenda (0 = topo, 1 = base). Sem valor, usa a posição segura da proporção.
+    var captionVertical: Double?
+    /// Falso quando o usuário apaga as legendas; a transcrição continua guardada.
+    var captionsEnabled: Bool = true
     var name: String = "Projeto sem título"
     var profile: String = "Institucional"
     var media: [LocalMedia] = []
@@ -262,7 +288,7 @@ struct EditorProject: Codable {
     var duckingLevel: Double = 0.24
     var updatedAt: Date = .now
 
-    enum CodingKeys: String, CodingKey { case id, schemaVersion, clientID, captionStyle, captionHighlightHex, name, profile, media, clips, overlays, captionWords, automaticDucking, duckingLevel, updatedAt }
+    enum CodingKeys: String, CodingKey { case id, schemaVersion, clientID, captionStyle, captionHighlightHex, captionTextHex, captionFontSize, captionFontStyle, captionVertical, captionsEnabled, name, profile, media, clips, overlays, captionWords, automaticDucking, duckingLevel, updatedAt }
 
     init() {}
 
@@ -273,6 +299,11 @@ struct EditorProject: Codable {
         clientID = try values.decodeIfPresent(UUID.self, forKey: .clientID)
         captionStyle = try values.decodeIfPresent(String.self, forKey: .captionStyle) ?? "karaoke"
         captionHighlightHex = try values.decodeIfPresent(String.self, forKey: .captionHighlightHex) ?? "#FFD84D"
+        captionTextHex = try values.decodeIfPresent(String.self, forKey: .captionTextHex) ?? "#FFFFFF"
+        captionFontSize = try values.decodeIfPresent(Double.self, forKey: .captionFontSize) ?? 78
+        captionFontStyle = try values.decodeIfPresent(String.self, forKey: .captionFontStyle) ?? "heavy"
+        captionVertical = try values.decodeIfPresent(Double.self, forKey: .captionVertical)
+        captionsEnabled = try values.decodeIfPresent(Bool.self, forKey: .captionsEnabled) ?? true
         name = try values.decodeIfPresent(String.self, forKey: .name) ?? "Projeto sem título"
         profile = try values.decodeIfPresent(String.self, forKey: .profile) ?? "Institucional"
         media = try values.decodeIfPresent([LocalMedia].self, forKey: .media) ?? []
@@ -319,6 +350,7 @@ extension EditorProject {
         for index in copy.captionWords.indices {
             copy.captionWords[index].fontSize *= factor
         }
+        copy.captionFontSize *= factor
         return copy
     }
 }
@@ -340,4 +372,21 @@ struct ClientProfile: Identifiable, Codable, Hashable {
         ClientProfile(name: "Prefeitura de Tucuruí"),
         ClientProfile(name: "Outros clientes", targetMinimum: 15, targetMaximum: 180, openingDuration: 3)
     ]
+}
+
+/// Música ou efeito guardado no aparelho, usado em qualquer projeto.
+struct LibraryItem: Identifiable, Codable, Hashable {
+    var id: UUID = UUID()
+    var name: String
+    var relativePath: String
+    /// "music" ou "sfx".
+    var kind: String
+    /// Clima da música ou tipo do efeito, usado para procurar e pela IA.
+    var mood: String
+    var duration: Double
+    var beats: [Double] = []
+    var source: String = ""
+
+    static let musicMoods = ["emocionante", "inspirador", "obra e trabalho", "festa", "corporativo", "suave", "impacto"]
+    static let sfxKinds = ["transição", "impacto", "subida", "clique", "ambiente", "aplauso"]
 }

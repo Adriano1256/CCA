@@ -10,8 +10,10 @@
     return tl ? tl.duration() : 5;
   };
   window.__seek = function (t) {
+    // Composições em canvas, como as do motor MotionIA, expõem window.seek(t).
+    if (typeof window.seek === 'function') { window.seek(t); }
     var r = root();
-    if (!r) return false;
+    if (!r) return !!window.seek;
     var tl = window.__timelines[r.dataset.compositionId];
     if (tl) { tl.pause(); tl.totalTime(Math.min(t, tl.totalDuration()), false); }
     document.querySelectorAll('.clip[data-start]').forEach(function (el) {
@@ -23,6 +25,6 @@
     return true;
   };
   window.__ready = function () {
-    return (document.fonts ? document.fonts.status === 'loaded' : true) && !!root();
+    return (document.fonts ? document.fonts.status === 'loaded' : true) && (!!root() || typeof window.seek === 'function');
   };
 })();

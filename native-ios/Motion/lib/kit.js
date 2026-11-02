@@ -33,3 +33,31 @@ function comp(dur) {
   window.__timelines[id] = tl;
   return tl;
 }
+
+// Molas no estilo do Remotion, em forma fechada: o mesmo tempo sempre dá o mesmo quadro.
+function spring(stiffness, damping) {
+  var k = stiffness || 120, c = damping || 12;
+  var w0 = Math.sqrt(k), z = c / (2 * w0), wd = w0 * Math.sqrt(Math.max(0.0001, 1 - z * z));
+  return function (p) {
+    if (p <= 0) return 0;
+    if (p >= 1) return 1;
+    var t = p * 1.4;
+    return 1 - Math.exp(-z * w0 * t * 4) * (Math.cos(wd * t * 4) + (z * w0 / wd) * Math.sin(wd * t * 4));
+  };
+}
+// Equivalente ao interpolate do Remotion.
+function interpolate(v, a, b, c, d) {
+  var p = Math.max(0, Math.min(1, (v - a) / (b - a)));
+  return c + (d - c) * p;
+}
+// Número pseudoaleatório com semente, para o render ser repetível.
+function seeded(seed) {
+  var a = seed >>> 0;
+  return function () {
+    a = (a + 0x6D2B79F5) >>> 0;
+    var t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}

@@ -1,17 +1,172 @@
 [
- {"id":"abertura-institucional","name":"Abertura institucional","category":"Institucional","duration":4,"transparent":false,"fields":["titulo","subtitulo"]},
- {"id":"encerramento-logo","name":"Encerramento com logo","category":"Institucional","duration":3,"transparent":false,"fields":["titulo","subtitulo"]},
- {"id":"tarja-nome","name":"Tarja de nome","category":"Institucional","duration":5,"transparent":true,"fields":["titulo","subtitulo"]},
- {"id":"tarja-linha","name":"Tarja com linha","category":"Institucional","duration":5,"transparent":true,"fields":["titulo","subtitulo"]},
- {"id":"data-local","name":"Data e local","category":"Institucional","duration":5,"transparent":true,"fields":["titulo"]},
- {"id":"numero-contador","name":"Número subindo","category":"Institucional","duration":4,"transparent":false,"fields":["numero","titulo"]},
- {"id":"lista-entregas","name":"Lista de entregas","category":"Institucional","duration":6,"transparent":false,"fields":["titulo","subtitulo"]},
- {"id":"citacao","name":"Frase em destaque","category":"Institucional","duration":5,"transparent":true,"fields":["titulo","subtitulo"]},
- {"id":"transicao-cortina","name":"Transição cortina","category":"Transição","duration":1,"transparent":true,"fields":[]},
- {"id":"katana-palavras","name":"Katana: uma palavra por vez","category":"Impacto","duration":4,"transparent":false,"fields":["titulo"]},
- {"id":"impacto-3d","name":"Impacto 3D violeta e lime","category":"Impacto","duration":4,"transparent":false,"fields":["titulo","subtitulo"]},
- {"id":"grade-3d","name":"Grade 3D tecnológica","category":"Impacto","duration":4,"transparent":false,"fields":["titulo","subtitulo"]},
- {"id":"tipografia-palavras","name":"Tipografia palavra por palavra","category":"Impacto","duration":3,"transparent":true,"fields":["titulo"]},
- {"id":"marca-texto","name":"Marca-texto editorial","category":"Editorial","duration":3,"transparent":false,"fields":["titulo","subtitulo"]},
- {"id":"digitando","name":"Prompt digitando","category":"Editorial","duration":4,"transparent":false,"fields":["titulo"]}
+ {
+  "id": "abertura-institucional",
+  "name": "Abertura institucional",
+  "category": "Institucional",
+  "duration": 4,
+  "transparent": false,
+  "fields": [
+   "titulo",
+   "subtitulo"
+  ]
+ },
+ {
+  "id": "encerramento-logo",
+  "name": "Encerramento com logo",
+  "category": "Institucional",
+  "duration": 3,
+  "transparent": false,
+  "fields": [
+   "titulo",
+   "subtitulo"
+  ]
+ },
+ {
+  "id": "tarja-nome",
+  "name": "Tarja de nome",
+  "category": "Institucional",
+  "duration": 5,
+  "transparent": true,
+  "fields": [
+   "titulo",
+   "subtitulo"
+  ]
+ },
+ {
+  "id": "tarja-linha",
+  "name": "Tarja com linha",
+  "category": "Institucional",
+  "duration": 5,
+  "transparent": true,
+  "fields": [
+   "titulo",
+   "subtitulo"
+  ]
+ },
+ {
+  "id": "data-local",
+  "name": "Data e local",
+  "category": "Institucional",
+  "duration": 5,
+  "transparent": true,
+  "fields": [
+   "titulo"
+  ]
+ },
+ {
+  "id": "numero-contador",
+  "name": "Número subindo",
+  "category": "Institucional",
+  "duration": 4,
+  "transparent": false,
+  "fields": [
+   "numero",
+   "titulo"
+  ]
+ },
+ {
+  "id": "lista-entregas",
+  "name": "Lista de entregas",
+  "category": "Institucional",
+  "duration": 6,
+  "transparent": false,
+  "fields": [
+   "titulo",
+   "subtitulo"
+  ]
+ },
+ {
+  "id": "citacao",
+  "name": "Frase em destaque",
+  "category": "Institucional",
+  "duration": 5,
+  "transparent": true,
+  "fields": [
+   "titulo",
+   "subtitulo"
+  ]
+ },
+ {
+  "id": "transicao-cortina",
+  "name": "Transição cortina",
+  "category": "Transição",
+  "duration": 1,
+  "transparent": true,
+  "fields": []
+ },
+ {
+  "id": "katana-palavras",
+  "name": "Katana: uma palavra por vez",
+  "category": "Impacto",
+  "duration": 4,
+  "transparent": false,
+  "fields": [
+   "titulo"
+  ]
+ },
+ {
+  "id": "impacto-3d",
+  "name": "Impacto 3D violeta e lime",
+  "category": "Impacto",
+  "duration": 4,
+  "transparent": false,
+  "fields": [
+   "titulo",
+   "subtitulo"
+  ]
+ },
+ {
+  "id": "grade-3d",
+  "name": "Grade 3D tecnológica",
+  "category": "Impacto",
+  "duration": 4,
+  "transparent": false,
+  "fields": [
+   "titulo",
+   "subtitulo"
+  ]
+ },
+ {
+  "id": "tipografia-palavras",
+  "name": "Tipografia palavra por palavra",
+  "category": "Impacto",
+  "duration": 3,
+  "transparent": true,
+  "fields": [
+   "titulo"
+  ]
+ },
+ {
+  "id": "marca-texto",
+  "name": "Marca-texto editorial",
+  "category": "Editorial",
+  "duration": 3,
+  "transparent": false,
+  "fields": [
+   "titulo",
+   "subtitulo"
+  ]
+ },
+ {
+  "id": "digitando",
+  "name": "Prompt digitando",
+  "category": "Editorial",
+  "duration": 4,
+  "transparent": false,
+  "fields": [
+   "titulo"
+  ]
+ },
+ {
+  "id": "kinetic",
+  "name": "Texto animado livre",
+  "category": "Texto animado",
+  "duration": 5,
+  "transparent": true,
+  "fields": [
+   "titulo",
+   "estilo",
+   "fundo"
+  ]
+ }
 ]

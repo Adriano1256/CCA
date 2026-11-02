@@ -6,11 +6,12 @@ mkdir -p smoke
 python3 - <<'PY'
 import re
 s = open('project.yml').read()
-s = re.sub(r'packages:\n  LlamaSwift:\n    url: .*\n    exactVersion: .*\n', '', s)
-s = re.sub(r'    dependencies:\n      - package: LlamaSwift\n        product: LlamaSwift\n', '', s)
+s = re.sub(r'packages:\n(?:  .*\n)+', '', s, count=1)
+s = re.sub(r'    dependencies:\n(?:      .*\n)+', '', s, count=1)
 open('project-sim.yml', 'w').write(s)
 PY
-mkdir -p sim && xcodegen generate --spec project-sim.yml --project sim --project-roots . || exit 1
+mkdir -p sim
+xcodegen generate --spec project-sim.yml --project sim || exit 1
 xcodebuild -project sim/EditorIA.xcodeproj -scheme EditorIA -configuration Debug \
   -destination 'generic/platform=iOS Simulator' -derivedDataPath build-sim \
   ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO build > build-sim.log 2>&1
@@ -40,7 +41,7 @@ run_device() {
   xcrun simctl terminate "$DEVICE" com.criativar.editoria
 
   # 2. Fotos de cada tela, já com o projeto de teste aberto.
-  for PANEL in "" "Diretor IA" "Clipe" "Mídia" "Legendas" "Áudio" "Motion" "Cor" "Perfis"; do
+  for PANEL in "" "Chat" "Montagem" "Clipe" "Mídia" "Legendas" "Áudio" "Motion" "Cor" "Perfis"; do
     FILE=$(echo "${PANEL:-principal}" | tr -d ' ' | iconv -f utf8 -t ascii//TRANSLIT | tr -d "'\`^~")
     SIMCTL_CHILD_EDITORIA_OPEN="$PANEL" xcrun simctl launch --terminate-running-process "$DEVICE" com.criativar.editoria
     sleep 7
