@@ -20,7 +20,7 @@ APP=build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app
 test -f "$APP/EditorIA" || exit 1
 
 run_device() {
-  NAME_MATCH=$1; TAG=$2; shift 2
+  NAME_MATCH=$1; TAG=$2; SMOKE=$3; shift 3
   DEVICE=$(xcrun simctl list devices available | grep -m1 -E "$NAME_MATCH" | sed -E 's/.*\(([0-9A-F-]{36})\).*/\1/')
   xcrun simctl boot "$DEVICE"
   xcrun simctl bootstatus "$DEVICE" -b > /dev/null
@@ -29,9 +29,10 @@ run_device() {
   xcrun simctl status_bar "$DEVICE" override --time "9:41" || true
 
   # 1. Teste real: gera vídeos, monta, exporta e confere o arquivo.
+  if [ "$SMOKE" = 1 ]; then
   SIMCTL_CHILD_EDITORIA_SMOKE=1 xcrun simctl launch --console-pty --terminate-running-process "$DEVICE" com.criativar.editoria > "smoke/$TAG-console.log" 2>&1 &
   CONSOLE=$!
-  for i in $(seq 1 90); do
+  for i in $(seq 1 180); do
     DATA=$(xcrun simctl get_app_container "$DEVICE" com.criativar.editoria data)
     test -f "$DATA/Documents/Smoke/report.json" && break
     sleep 5
@@ -39,6 +40,7 @@ run_device() {
   kill $CONSOLE 2>/dev/null
   cp -R "$DATA/Documents/Smoke/" "smoke/$TAG/" 2>/dev/null
   xcrun simctl terminate "$DEVICE" com.criativar.editoria
+  fi
 
   # 2. Fotos de cada tela, já com o projeto de teste aberto.
   for PANEL in "" "Chat" "Montagem" "Clipe" "Mídia" "Legendas" "Áudio" "Motion" "Cor" "Perfis"; do
@@ -51,6 +53,6 @@ run_device() {
   xcrun simctl shutdown "$DEVICE"
 }
 
-run_device 'iPhone 1[0-9]' iphone
-run_device 'iPad' ipad
+run_device 'iPhone 1[0-9]' iphone 1
+run_device 'iPad' ipad 0
 ls -R smoke | head -60

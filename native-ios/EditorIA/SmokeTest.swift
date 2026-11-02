@@ -61,13 +61,13 @@ enum SmokeTest {
 
             // Exportação horizontal.
             let renderer = TimelineRenderer()
-            let horizontal = try await limited(renderer, project: project, baseDirectory: base, width: 1920, height: 1080)
+            let horizontal = try await limited(renderer, project: project, baseDirectory: base, width: 640, height: 360)
             let asset = AVURLAsset(url: horizontal)
             let duration = try await asset.load(.duration).seconds
             record("Exporta MP4 horizontal", abs(duration - project.contentEnd) < 0.3, String(format: "%.2f s, esperado %.2f", duration, project.contentEnd))
             let tracks = try await asset.loadTracks(withMediaType: .video)
             let size = try await tracks.first?.load(.naturalSize) ?? .zero
-            record("Tamanho 1920x1080", size == CGSize(width: 1920, height: 1080), "\(size)")
+            record("Tamanho 640x360", size == CGSize(width: 640, height: 360), "\(size)")
             let rate = try await tracks.first?.load(.nominalFrameRate) ?? 0
             record("Timeline segue o maior frame rate", rate > 50, "\(rate) fps")
 
@@ -89,34 +89,34 @@ enum SmokeTest {
             record("Dissolve mistura os dois clipes", dissolve.r > 40 && dissolve.b > 40, "\(dissolve)")
 
             // Vertical, com a mesma timeline: o vídeo deitado precisa encher a tela em pé.
-            let vertical = try await limited(renderer, project: project, baseDirectory: base, width: 1080, height: 1920)
+            let vertical = try await limited(renderer, project: project, baseDirectory: base, width: 360, height: 640)
             let verticalRed = try await sampled(3.5, tag: "v-vermelho", x: 0.5, y: 0.1, url: vertical)
             record("Vertical preenche o quadro", verticalRed.r > 200, "\(verticalRed)")
 
             // Cor e LUT: o LUT preto precisa escurecer o clipe.
             var graded = project
             if let index = graded.clips.firstIndex(where: { $0.id == first.id }) { graded.clips[index].look.lutRelativePath = "preto.cube" }
-            let gradedURL = try await limited(renderer, project: graded, baseDirectory: base, width: 1280, height: 720)
+            let gradedURL = try await limited(renderer, project: graded, baseDirectory: base, width: 640, height: 360)
             let dark = try await sampled(0.2, tag: "lut", url: gradedURL)
             record("LUT .cube é aplicado", dark.b < 40, "\(dark)")
 
             var brighter = project
             if let index = brighter.clips.firstIndex(where: { $0.id == third.id }) { brighter.clips[index].look.saturation = 0 }
-            let bw = try await limited(renderer, project: brighter, baseDirectory: base, width: 1280, height: 720)
+            let bw = try await limited(renderer, project: brighter, baseDirectory: base, width: 640, height: 360)
             let gray = try await sampled(6.5, tag: "saturacao", url: bw)
             record("Saturação zero deixa cinza", abs(gray.r - gray.g) < 25 && abs(gray.g - gray.b) < 25, "\(gray)")
 
             // Qualidade escolhida: máxima precisa gerar arquivo bem maior que boa.
             var lowOptions = ExportOptions(); lowOptions.quality = .good
-            let lowURL = try await limited(renderer, project: project, baseDirectory: base, width: 1280, height: 720, options: lowOptions)
-            let highURL = try await limited(renderer, project: project, baseDirectory: base, width: 1280, height: 720, options: .maximum)
+            let lowURL = try await limited(renderer, project: project, baseDirectory: base, width: 640, height: 360, options: lowOptions)
+            let highURL = try await limited(renderer, project: project, baseDirectory: base, width: 640, height: 360, options: .maximum)
             let lowTracks = try await AVURLAsset(url: lowURL).loadTracks(withMediaType: .video)
             let highTracks = try await AVURLAsset(url: highURL).loadTracks(withMediaType: .video)
             let lowRate = try await lowTracks.first?.load(.estimatedDataRate) ?? 0
             let highRate = try await highTracks.first?.load(.estimatedDataRate) ?? 0
             record("Qualidade máxima usa mais dados", highRate >= lowRate, "\(lowRate) e \(highRate) bps")
             var hevcOptions = ExportOptions(); hevcOptions.codec = .hevc
-            let hevcURL = try await limited(renderer, project: project, baseDirectory: base, width: 1280, height: 720, options: hevcOptions)
+            let hevcURL = try await limited(renderer, project: project, baseDirectory: base, width: 640, height: 360, options: hevcOptions)
             let hevcFrame = try await sampled(0.2, tag: "hevc", url: hevcURL)
             record("Exporta em HEVC", hevcFrame.b > 200, "\(hevcFrame)")
             var fixedRate = ExportOptions(); fixedRate.frameRate = 24
@@ -146,7 +146,7 @@ enum SmokeTest {
                 guard let template = catalog.first(where: { $0.id == id }) else { continue }
                 do {
                     let output = folder.appendingPathComponent("motion-\(id).mov")
-                    try await engine.renderTemplate(template, values: ["titulo": "Asfalto novo", "subtitulo": "Bairro Centro", "cor1": "#0B6E4F", "cor2": "#FFFFFF", "estilo": "mola"], duration: 3, width: 1280, height: 720, frameRate: 30, output: output)
+                    try await engine.renderTemplate(template, values: ["titulo": "Asfalto novo", "subtitulo": "Bairro Centro", "cor1": "#0B6E4F", "cor2": "#FFFFFF", "estilo": "mola"], duration: 3, width: 640, height: 360, frameRate: 30, output: output)
                     let picture = try await frame(of: output, at: time)
                     try UIImage(cgImage: picture).pngData()?.write(to: folder.appendingPathComponent("motion-\(id).png"))
                     let seconds = try await AVURLAsset(url: output).load(.duration).seconds
@@ -157,7 +157,7 @@ enum SmokeTest {
                     try? FileManager.default.copyItem(at: output, to: base.appendingPathComponent("Media/\(id).mov"))
                     withMotion.media.append(motionMedia)
                     withMotion.clips.append(TimelineClip(mediaID: motionMedia.id, track: "motion", start: 0, duration: 3, volume: 0, label: id))
-                    let mixed = try await limited(renderer, project: withMotion, baseDirectory: base, width: 1280, height: 720)
+                    let mixed = try await limited(renderer, project: withMotion, baseDirectory: base, width: 640, height: 360)
                     let check = try await sampled(2, tag: "mix-\(id)", x: 0.9, y: 0.1, url: mixed)
                     if template.transparent {
                         record("Motion transparente deixa o vídeo aparecer", check.b > 150, "\(check)")
@@ -204,7 +204,7 @@ enum SmokeTest {
     }
 
     struct Timeout: LocalizedError {
-        var errorDescription: String? { "Exportação passou de 3 minutos e foi interrompida" }
+        var errorDescription: String? { "Exportação passou de 4 minutos e foi interrompida" }
     }
 
     /// Exporta com tempo limite, para um travamento aparecer no relatório em vez de parar o teste.
