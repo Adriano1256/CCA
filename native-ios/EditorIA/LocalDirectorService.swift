@@ -23,7 +23,7 @@ struct LocalDirectorPlan: Identifiable, Codable, Hashable {
 }
 
 enum LocalDirectorService {
-    static func makePlan(command: String, project: EditorProject) -> LocalDirectorPlan {
+    static func makePlan(command: String, project: EditorProject, client: ClientProfile? = nil, beats: [Double] = []) -> LocalDirectorPlan {
         let normalized = command.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
         let isStories = normalized.contains("story") || normalized.contains("stories") || normalized.contains("reels")
         let isInstitutional = ["prefeitura", "institucional", "obra", "asfalto", "entrega", "evento", "acao", "saude", "educacao"]
@@ -63,9 +63,17 @@ enum LocalDirectorService {
         warnings.append("Este planejador é uma primeira camada determinística local. Um modelo de linguagem local ainda precisa ser integrado para compreensão livre e comandos complexos.")
 
         let descriptors = project.directorMedia
+        let opening = client?.openingDuration ?? 8
+        let cuts = BeatDetector.alignedCuts(start: 0, duration: opening, beats: beats)
         let timelineDraft = isStories
             ? DirectorPlanningCore.buildStoriesDraft(media: descriptors)
-            : (isInstitutional ? DirectorPlanningCore.buildInstitutionalDraft(media: descriptors) : nil)
+            : (isInstitutional ? DirectorPlanningCore.buildInstitutionalDraft(
+                media: descriptors,
+                openingDuration: opening,
+                targetMinimum: client?.targetMinimum ?? 90,
+                targetMaximum: client?.targetMaximum ?? 120,
+                openingCuts: beats.isEmpty ? [] : cuts
+            ) : nil)
 
         return LocalDirectorPlan(
             originalCommand: command.trimmingCharacters(in: .whitespacesAndNewlines),

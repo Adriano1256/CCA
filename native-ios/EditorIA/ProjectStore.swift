@@ -76,6 +76,7 @@ final class ProjectStore: ObservableObject {
             try fileManager.createDirectory(at: mediaDirectory, withIntermediateDirectories: true)
             try fileManager.createDirectory(at: projectsDirectory, withIntermediateDirectories: true)
             excludeFromBackup(projectDirectory)
+            loadClients()
             loadInitialProject()
         } catch {
             status = "Não foi possível preparar o armazenamento local"
@@ -289,6 +290,13 @@ final class ProjectStore: ObservableObject {
             }
         }
         status = isSonora ? "Marcado como sonora. A fala será preservada inteira." : "Marcação de sonora removida"
+        saveProject()
+    }
+
+    func setCaptionStyle(_ style: String) {
+        guard project.captionStyle != style else { return }
+        recordUndo()
+        project.captionStyle = style
         saveProject()
     }
 
@@ -784,6 +792,272 @@ final class ProjectStore: ObservableObject {
         } catch {
             status = "Erro ao salvar projeto: \(error.localizedDescription)"
         }
+    }
+
+    // MARK: - Aparência do clipe
+
+    /// Ajusta a aparência do clipe selecionado. Vários ajustes seguidos viram um só passo de desfazer.
+    func updateSelectedLook(_ key: String, _ change: (inout ClipLook) -> Void) {
+        guard let id = selectedClipID, let index = project.clips.firstIndex(where: { $0.id == id }) else { return }
+        recordUndo(coalescing: "look-\(key)-\(id)")
+        change(&project.clips[index].look)
+        saveProject()
+    }
+
+    func copySelectedColorToTrack() {
+        guard let clip = selectedClip else { return }
+        recordUndo()
+        for index in project.clips.indices where project.clips[index].track == clip.track {
+            let source = clip.look
+            project.clips[index].look.exposure = source.exposure
+            project.clips[index].look.contrast = source.contrast
+            project.clips[index].look.saturation = source.saturation
+            project.clips[index].look.temperature = source.temperature
+            project.clips[index].look.tint = source.tint
+            project.clips[index].look.shadows = source.shadows
+            project.clips[index].look.highlights = source.highlights
+            project.clips[index].look.lutRelativePath = source.lutRelativePath
+            project.clips[index].look.lutIntensity = source.lutIntensity
+        }
+        status = "Cor aplicada a toda a trilha"
+        saveProject()
+    }
+
+    func setSelectedSpeed(_ speed: Double) {
+        guard let id = selectedClipID, let index = project.clips.firstIndex(where: { $0.id == id }) else { return }
+        recordUndo(coalescing: "speed-\(id)")
+        project.clips[index] = TimelineEditing.setSpeed(project.clips[index], to: speed)
+        saveProject()
+    }
+
+    func addTransitionToSelected(kind: String, duration: Double) {
+        guard let id = selectedClipID else { return }
+        guard let next = TimelineEditing.addTransition(to: id, kind: kind, duration: duration, in: project.clips) else {
+            status = "Transição precisa de um clipe logo antes, na mesma trilha"
+            return
+        }
+        recordUndo()
+        project.clips = next
+        status = "Transição aplicada"
+        saveProject()
+    }
+
+    /// Guarda o LUT junto da mídia e aplica ao clipe selecionado.
+    func importLUT(from url: URL) {
+        let access = url.startAccessingSecurityScopedResource()
+        defer { if access { url.stopAccessingSecurityScopedResource() } }
+        do {
+            let text = try String(contentsOf: url, encoding: .utf8)
+            _ = try CubeLUT.parse(text)
+            let folder = projectDirectory.appendingPathComponent("LUTs", isDirectory: true)
+            try fileManager.createDirectory(at: folder, withIntermediateDirectories: true)
+            let destination = folder.appendingPathComponent(url.lastPathComponent)
+            try? fileManager.removeItem(at: destination)
+            try text.write(to: destination, atomically: true, encoding: .utf8)
+            updateSelectedLook("lut") { $0.lutRelativePath = "LUTs/\(url.lastPathComponent)" }
+            status = "LUT \(url.lastPathComponent) aplicado"
+        } catch {
+            status = error.localizedDescription
+        }
+    }
+
+    // MARK: - Corte de fala aprovado
+
+    /// Só é chamado depois de o usuário ver a transcrição e aprovar.
+    func applyApprovedSpeechCut(clipID: UUID, range: AudioDuckingRange) {
+        guard let next = TimelineEditing.cut(clipID, removing: range, in: project.clips) else {
+            status = "Trecho fora do clipe"
+            return
+        }
+        recordUndo()
+        project.clips = next
+        let removed = range.end - range.start
+        project.captionWords = project.captionWords.compactMap { word in
+            let center = word.start + word.duration / 2
+            if center >= range.start && center <= range.end { return nil }
+            var moved = word
+            if word.start >= range.end { moved.start = max(0, word.start - removed) }
+            return moved
+        }
+        selectedClipID = nil
+        status = "Corte de fala aprovado aplicado. Desfazer traz de volta."
+        saveProject()
+    }
+
+    // MARK: - IA local
+
+    func applyAgentPlan(_ plan: AgentPlan) -> AgentOutcome {
+        recordUndo()
+        let outcome = AgentExecutor.apply(plan, to: project, playhead: playhead)
+        project = outcome.project
+        project.overlays.sort { $0.start < $1.start }
+        if let seek = outcome.seek { playhead = max(0, seek) }
+        selectedClipID = nil
+        status = outcome.done.isEmpty ? "Nenhuma alteração feita" : outcome.done.joined(separator: " · ")
+        saveProject()
+        return outcome
+    }
+
+    // MARK: - Análise automática
+
+    /// Analisa o som de todo o material, sugere o que é sonora e acha as batidas das músicas.
+    func analyzeAllSound(onProgress: (String) -> Void) async {
+        let targets = project.media.filter { !$0.isDerived && $0.kind != "Imagem" }
+        guard !targets.isEmpty else { status = "Nenhum vídeo ou áudio para analisar"; return }
+        recordUndo()
+        var marked = 0
+        for (position, item) in targets.enumerated() {
+            onProgress("Ouvindo \(position + 1) de \(targets.count): \(item.name)")
+            let url = urlForMedia(item)
+            let duration = item.duration ?? 0
+            guard let report = try? await SoundDirectorService.analyze(url: url, duration: duration),
+                  let index = project.media.firstIndex(where: { $0.id == item.id }) else { continue }
+            project.media[index].speechRanges = report.speechRanges
+            project.media[index].soundSummary = report.summary
+            if AudioContentAnalysis.looksLikeSonora(speechCoverage: report.speechShare, duration: duration), !project.media[index].isSonora, report.musicShare < 0.6 {
+                project.media[index].isSonora = true
+                marked += 1
+                if project.media[index].kind == "Áudio" {
+                    for clipIndex in project.clips.indices where project.clips[clipIndex].mediaID == item.id {
+                        project.clips[clipIndex].track = "voice"
+                        project.clips[clipIndex].volume = 1
+                    }
+                }
+            }
+            if item.kind == "Áudio", report.musicShare >= 0.4, let beats = try? await SoundDirectorService.beats(url: url) {
+                project.media[index].beats = beats
+            }
+        }
+        status = "Som analisado. \(marked) arquivo(s) marcados como sonora; confira na aba Mídia."
+        saveProject()
+    }
+
+    /// Transcreve cada sonora da timeline em ordem.
+    func transcribeAllSonoras(onProgress: (String) -> Void) async {
+        let targets = project.clips
+            .filter { clip in clip.track == "voice" || (project.media.first { $0.id == clip.mediaID }?.isSonora ?? false) }
+            .sorted { $0.start < $1.start }
+        guard !targets.isEmpty else { status = "Marque as sonoras na aba Mídia primeiro"; return }
+        for (position, clip) in targets.enumerated() {
+            onProgress("Transcrevendo \(position + 1) de \(targets.count)")
+            selectedClipID = clip.id
+            selectedMediaID = clip.mediaID
+            await transcribeSelectedClip()
+        }
+    }
+
+    /// Batidas da primeira música da timeline, em tempo de timeline.
+    var musicBeats: [Double] {
+        guard let clip = project.clips.filter({ $0.track == "audio" }).min(by: { $0.start < $1.start }),
+              let media = project.media.first(where: { $0.id == clip.mediaID }) else { return [] }
+        let speed = max(0.01, clip.look.speed)
+        return media.beats.map { clip.start + ($0 - clip.sourceIn) / speed }.filter { $0 >= clip.start && $0 <= clip.end }
+    }
+
+    // MARK: - Motion
+
+    var motionDirectoryURL: URL {
+        let folder = mediaDirectory.appendingPathComponent("Motion", isDirectory: true)
+        try? fileManager.createDirectory(at: folder, withIntermediateDirectories: true)
+        return folder
+    }
+
+    func newMotionURL() -> URL {
+        motionDirectoryURL.appendingPathComponent("motion-\(UUID().uuidString).mov")
+    }
+
+    /// O motion renderizado entra na timeline como um clipe editável.
+    func addMotionClip(file: URL, name: String, start: Double, duration: Double, opaque: Bool) {
+        recordUndo()
+        let item = LocalMedia(
+            name: name,
+            relativePath: "Media/Motion/\(file.lastPathComponent)",
+            kind: "Vídeo",
+            byteCount: ((try? fileManager.attributesOfItem(atPath: file.path)[.size]) as? NSNumber)?.int64Value ?? 0,
+            importOrder: project.media.count + 1,
+            duration: duration,
+            isDerived: true
+        )
+        project.media.append(item)
+        let clip = TimelineClip(mediaID: item.id, track: "motion", start: start, duration: duration, volume: 0, label: name)
+        project.clips.append(clip)
+        selectedClipID = clip.id
+        selectedMediaID = item.id
+        status = "Motion \"\(name)\" na timeline"
+        saveProject()
+    }
+
+    // MARK: - Clientes
+
+    @Published private(set) var clients: [ClientProfile] = []
+
+    private var clientsFile: URL { projectDirectory.appendingPathComponent("clients.json") }
+
+    func loadClients() {
+        if let data = try? Data(contentsOf: clientsFile), let loaded = try? JSONDecoder().decode([ClientProfile].self, from: data), !loaded.isEmpty {
+            clients = loaded
+        } else {
+            clients = ClientProfile.defaults
+            saveClients()
+        }
+    }
+
+    private func saveClients() {
+        if let data = try? JSONEncoder().encode(clients) { try? data.write(to: clientsFile, options: .atomic) }
+    }
+
+    var currentClient: ClientProfile? { clients.first { $0.id == project.clientID } }
+
+    func setClient(_ id: UUID?) {
+        guard project.clientID != id else { return }
+        recordUndo()
+        project.clientID = id
+        saveProject()
+    }
+
+    func updateClient(_ client: ClientProfile) {
+        guard let index = clients.firstIndex(where: { $0.id == client.id }) else { return }
+        clients[index] = client
+        saveClients()
+    }
+
+    func addClient(named name: String) {
+        let cleaned = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleaned.isEmpty else { return }
+        clients.append(ClientProfile(name: cleaned))
+        saveClients()
+    }
+
+    func deleteClient(_ id: UUID) {
+        clients.removeAll { $0.id == id }
+        saveClients()
+    }
+
+    func importClientLogo(from url: URL, clientID: UUID) {
+        let access = url.startAccessingSecurityScopedResource()
+        defer { if access { url.stopAccessingSecurityScopedResource() } }
+        guard let index = clients.firstIndex(where: { $0.id == clientID }) else { return }
+        let folder = projectDirectory.appendingPathComponent("Logos", isDirectory: true)
+        try? fileManager.createDirectory(at: folder, withIntermediateDirectories: true)
+        let ext = url.pathExtension.isEmpty ? "png" : url.pathExtension
+        let destination = folder.appendingPathComponent("\(clientID.uuidString).\(ext)")
+        try? fileManager.removeItem(at: destination)
+        do {
+            try fileManager.copyItem(at: url, to: destination)
+            clients[index].logoRelativePath = "Logos/\(destination.lastPathComponent)"
+            saveClients()
+            status = "Logo salvo"
+        } catch {
+            status = "Não foi possível salvar o logo: \(error.localizedDescription)"
+        }
+    }
+
+    /// Logo como endereço embutido, para os modelos de motion funcionarem sem acesso a outros arquivos.
+    func logoDataURI(for client: ClientProfile?) -> String {
+        guard let path = client?.logoRelativePath,
+              let data = try? Data(contentsOf: projectDirectory.appendingPathComponent(path)) else { return "" }
+        let mime = path.lowercased().hasSuffix("png") ? "image/png" : "image/jpeg"
+        return "data:\(mime);base64,\(data.base64EncodedString())"
     }
 
     private func timecode(_ value: Double) -> String {

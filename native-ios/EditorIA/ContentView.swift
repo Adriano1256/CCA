@@ -42,6 +42,13 @@ struct ContentView: View {
     @State private var directorPlan: LocalDirectorPlan?
     @State private var approveStoryCuts = false
     @State private var showApproval = false
+    @StateObject private var models = ModelManager()
+    @StateObject private var agent = AgentController()
+    @StateObject private var motion = MotionEngine()
+    @State private var showLUTImporter = false
+    @State private var showVoiceRecorder = false
+    @State private var sonoraCutClipID: UUID?
+    @State private var analysisMessage: String?
     @StateObject private var playback = TimelinePlayback()
     @StateObject private var renderer = TimelineRenderer()
     @StateObject private var audioAnalyzer = LocalAudioAnalysisService()
@@ -106,6 +113,13 @@ struct ContentView: View {
             preferredItemEncoding: .current
         )
         .sheet(isPresented: $showProjects) { ProjectsSheet() }
+        .sheet(isPresented: $showVoiceRecorder) { VoiceRecorderSheet() }
+        .sheet(item: Binding(get: { sonoraCutClipID.map { IdentifiedUUID(id: $0) } }, set: { sonoraCutClipID = $0?.id })) { item in
+            SonoraCutSheet(clipID: item.id)
+        }
+        .fileImporter(isPresented: $showLUTImporter, allowedContentTypes: [UTType(filenameExtension: "cube") ?? .data]) { result in
+            if case .success(let url) = result { store.importLUT(from: url) }
+        }
         .sheet(item: $sheetSection) { section in
             NavigationStack {
                 ScrollView {
@@ -373,6 +387,37 @@ struct ContentView: View {
         .background(.bar)
     }
 
+    /// Pedidos da IA que precisam do aparelho, não só de mexer no projeto.
+    private func handleAgentRequests(_ requests: [AgentRequest]) {
+        for request in requests {
+            switch request {
+            case .transcribeAll:
+                Task { await store.transcribeAllSonoras { store.status = $0 } }
+            case .analyzeSound:
+                Task { await store.analyzeAllSound { store.status = $0 } }
+            case .exportVideo:
+                startExport()
+            case .motion(let templateID, let text, let start, let duration):
+                guard let template = MotionTemplate.loadCatalog().first(where: { $0.id == templateID }) else {
+                    agent.addNote("Modelo de motion \"\(templateID)\" não existe.")
+                    continue
+                }
+                let client = store.currentClient
+                let values = ["titulo": text, "cor1": client?.primaryHex ?? "#1F6FEB", "cor2": client?.secondaryHex ?? "#FFFFFF", "logo": store.logoDataURI(for: client)]
+                let output = store.newMotionURL()
+                let size = baseDimensions
+                Task {
+                    do {
+                        try await motion.renderTemplate(template, values: values, duration: duration, width: size.width, height: size.height, frameRate: 30, output: output)
+                        store.addMotionClip(file: output, name: template.name, start: start, duration: duration, opaque: !template.transparent)
+                    } catch {
+                        agent.addNote(error.localizedDescription)
+                    }
+                }
+            }
+        }
+    }
+
     private func seek(_ seconds: Double) {
         playback.pause()
         store.playhead = max(0, seconds)
@@ -386,6 +431,7 @@ struct ContentView: View {
 
     private func startExport() {
         playback.pause()
+        agent.unload()
         Task {
             do {
                 let size = exportDimensions
@@ -400,6 +446,7 @@ struct ContentView: View {
 
     private func startStoriesExport() {
         playback.pause()
+        agent.unload()
         Task {
             do {
                 let size = export4K ? (width: 2160, height: 3840) : (width: 1080, height: 1920)
@@ -480,10 +527,11 @@ struct ContentView: View {
                 ContentUnavailableView("Nenhum clipe selecionado", systemImage: "cursorarrow.click", description: Text("Toque em um clipe na timeline."))
             }
         case .director:
+            AIAssistantPanel(models: models, agent: agent, onRequests: handleAgentRequests)
             VStack(alignment: .leading, spacing: 12) {
-                Label("Diretor IA", systemImage: "sparkles")
+                Label("Montagem automática", systemImage: "sparkles")
                     .font(.title3.bold())
-                Text("Marque as sonoras na aba Mídia e peça a montagem. Nesta versão o Diretor segue regras fixas do padrão institucional e de Stories; ele ainda não entende comandos livres nem assiste ao vídeo.")
+                Text("Marque as sonoras na aba Mídia e peça a montagem. Estas são as regras fixas do padrão institucional e de Stories, e funcionam mesmo sem modelo de IA instalado.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 TextField("Ex.: monte um vídeo institucional respeitando a ordem dos arquivos", text: $command, axis: .vertical)
@@ -491,7 +539,7 @@ struct ContentView: View {
                     .textFieldStyle(.roundedBorder)
                 HStack {
                     Button {
-                        directorPlan = LocalDirectorService.makePlan(command: command, project: store.project)
+                        directorPlan = LocalDirectorService.makePlan(command: command, project: store.project, client: store.currentClient, beats: store.musicBeats)
                         store.status = "Plano local preparado. Nenhum corte foi executado."
                     } label: { Label("Analisar comando", systemImage: "list.clipboard") }
                         .buttonStyle(.borderedProminent)
@@ -657,6 +705,22 @@ struct ContentView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(isTranscribing || store.selectedClip == nil)
+                Button {
+                    isTranscribing = true
+                    Task {
+                        await store.transcribeAllSonoras { analysisMessage = $0 }
+                        analysisMessage = nil
+                        isTranscribing = false
+                    }
+                } label: { Label(analysisMessage ?? "Transcrever todas as sonoras", systemImage: "text.badge.checkmark") }
+                .buttonStyle(.bordered)
+                .disabled(isTranscribing)
+                Picker("Estilo da legenda", selection: Binding(get: { store.project.captionStyle }, set: { value in store.setCaptionStyle(value) })) {
+                    Text("Karaokê").tag("karaoke")
+                    Text("Frase").tag("phrase")
+                    Text("Palavra").tag("word")
+                }
+                .pickerStyle(.segmented)
                 Text("Usa reconhecimento de fala no próprio aparelho, quando o idioma e o dispositivo oferecem suporte a reconhecimento offline. Não envia o áudio para um servidor.")
                     .font(.caption).foregroundStyle(.secondary)
 
@@ -705,26 +769,16 @@ struct ContentView: View {
         case .motion:
             motionStudioSection
         case .color:
-            featureCard("Color Studio", subtitle: "Correção por clipe, LUTs, curvas, exposição, balanço de branco e harmonização de câmeras.", icon: "circle.lefthalf.filled")
+            ColorPanel(showLUTImporter: $showLUTImporter)
         case .styles:
-            VStack(alignment: .leading, spacing: 10) {
-                Label("Perfil do projeto", systemImage: "square.grid.2x2").font(.title3.bold())
-                Picker("Perfil", selection: Binding(get: { store.project.profile }, set: { store.setProfile($0) })) {
-                    ForEach(["Institucional", "Stories", "Entrevistas", "Eventos", "Viral", "Publicidade", "Documentário", "Casamento"], id: \.self) { Text($0).tag($0) }
-                }
-                .pickerStyle(.menu)
-                Text("Hoje só Institucional e Stories têm regras de montagem. Os outros perfis ficam registrados no projeto e ainda não mudam o resultado.")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18))
+            ClientProfilesPanel()
         }
     }
 
     private var motionStudioSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Label("Motion Studio", systemImage: "keyframes")
+            MotionGalleryPanel(engine: motion, width: baseDimensions.width, height: baseDimensions.height)
+            Label("Textos animados", systemImage: "textformat")
                 .font(.title3.bold())
             Text("Edite posição, tamanho, rotação, contorno e animação dos textos. As alterações são aplicadas à composição e salvas no projeto local.")
                 .font(.subheadline).foregroundStyle(.secondary)
@@ -738,6 +792,7 @@ struct ContentView: View {
                         Text("Pop").tag("pop")
                         Text("Deslizar").tag("slide")
                         Text("Bounce").tag("bounce")
+                        Text("Slam").tag("slam")
                     }
                     .pickerStyle(.segmented)
                     Button {
@@ -900,17 +955,16 @@ struct ContentView: View {
                             motionSlider("Rotação", value: $motionDraftRotation, range: -180...180, suffix: "°")
                             motionSlider("Contorno", value: $motionDraftOutline, range: 0...12, suffix: " px")
                             Picker("Animação de entrada", selection: $motionDraftAnimation) {
-                                Text("Fade").tag("fade")
-                                Text("Pop").tag("pop")
-                                Text("Deslizar").tag("slide")
-                                Text("Bounce").tag("bounce")
+                                ForEach(TextMotion.entranceKinds, id: \.self) { Text($0).tag($0) }
                             }
-                            .pickerStyle(.segmented)
+                            .pickerStyle(.menu)
                             Picker("Animação por palavra", selection: $motionDraftWordAnimation) {
                                 Text("Desativada").tag("none")
-                                Text("Palavra por palavra").tag("wordPop")
+                                Text("Palavra aparecendo").tag("wordPop")
+                                Text("Palavra com impacto").tag("wordSlam")
+                                Text("Palavra subindo").tag("wordSlide")
                             }
-                            .pickerStyle(.segmented)
+                            .pickerStyle(.menu)
                             HStack {
                                 Button("Branco") { motionDraftColor = "#FFFFFF" }.buttonStyle(.bordered)
                                 Button("Amarelo") { motionDraftColor = "#FFD84D" }.buttonStyle(.bordered)
@@ -980,6 +1034,18 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 12) {
             Label("Sound Director IA", systemImage: "waveform")
                 .font(.title3.bold())
+            Button {
+                Task {
+                    await store.analyzeAllSound { analysisMessage = $0 }
+                    analysisMessage = nil
+                }
+            } label: { Label(analysisMessage ?? "Ouvir todo o material", systemImage: "ear") }
+                .buttonStyle(.borderedProminent)
+                .disabled(analysisMessage != nil)
+            Text("Detecta fala e música no próprio aparelho, sugere quais arquivos são sonoras, acha as batidas das músicas para os cortes da abertura e abaixa a trilha só quando há fala.")
+                .font(.caption).foregroundStyle(.secondary)
+            Button { showVoiceRecorder = true } label: { Label("Gravar narração", systemImage: "mic.fill") }
+                .buttonStyle(.bordered)
             Text("Análise acústica local para identificar níveis de áudio e pausas. Nenhum arquivo é enviado para a nuvem.")
                 .font(.subheadline).foregroundStyle(.secondary)
 
@@ -1016,7 +1082,7 @@ struct ContentView: View {
                         get: { store.project.automaticDucking },
                         set: { store.setAutomaticDucking($0) }
                     ))
-                    Text("Usa os trechos transcritos como referência para baixar a trilha musical. Não altera o áudio original da fala.")
+                    Text("Usa a fala detectada e os trechos transcritos para baixar a trilha musical. Não altera o áudio original da fala.")
                         .font(.caption).foregroundStyle(.secondary)
                     HStack {
                         Text("Volume da música durante a fala")
@@ -1028,7 +1094,7 @@ struct ContentView: View {
                         get: { store.project.duckingLevel },
                         set: { store.setDuckingLevel($0) }
                     ), in: 0.05 ... 0.8, step: 0.05)
-                    Text("O ducking só é aplicado na exportação quando há legendas/transcrição sincronizadas no projeto.")
+                    Text("O ducking precisa de fala detectada: use Ouvir todo o material ou transcreva as sonoras.")
                         .font(.caption2).foregroundStyle(.secondary)
                 }
             }
@@ -1099,7 +1165,7 @@ struct ContentView: View {
                         .padding(.vertical, 3)
                     }
                 }
-                Text("A análise atual mede energia RMS e detecta pausas candidatas. Ela ainda não reconhece classes de sons, emoções ou escolhe efeitos musicais automaticamente.")
+                Text("Esta medida mostra volume e pausas. Fala e música vêm de Ouvir todo o material. Trilha e efeitos sonoros automáticos ainda não existem.")
                     .font(.caption2).foregroundStyle(.tertiary)
             }
         }
@@ -1153,6 +1219,7 @@ struct ContentView: View {
                 Text("Voz / sonora").tag("voice")
                 Text("Trilha musical").tag("audio")
                 Text("Efeitos sonoros").tag("sfx")
+                Text("Motion").tag("motion")
             }
             .pickerStyle(.menu)
             HStack(spacing: 8) {
@@ -1215,9 +1282,10 @@ struct ContentView: View {
                     Button { store.addKeyframe(property: "volume", value: clip.volume) } label: { Label("Gravar volume", systemImage: "waveform") }
                 }
                 .buttonStyle(.bordered)
-                Text("\(clip.keyframes.count) keyframe(s) · propriedades: opacidade, escala e volume")
+                Text("\(clip.keyframes.count) keyframe(s)")
                     .font(.caption2).foregroundStyle(.secondary)
             }
+            ClipEffectsPanel(clip: clip, onReviewSpeech: { sonoraCutClipID = clip.id })
             Text("Dividir exige posicionar o cursor dentro do clipe. Mover e ajustar duração não alteram o arquivo original.")
                 .font(.caption2).foregroundStyle(.secondary)
         }
@@ -1263,6 +1331,9 @@ private struct EditorTimeline: View {
         ]
         if store.project.clips.contains(where: { $0.track == "subject" }) {
             result.append(Lane(id: "subject", title: "Pessoa recortada", symbol: "person.crop.rectangle", tint: .indigo))
+        }
+        if store.project.clips.contains(where: { $0.track == "motion" }) {
+            result.append(Lane(id: "motion", title: "Motion", symbol: "wand.and.stars", tint: .yellow))
         }
         if !store.project.overlays.isEmpty { result.append(Lane(id: "#text", title: "Textos", symbol: "textformat", tint: .purple)) }
         if !store.project.captionWords.isEmpty { result.append(Lane(id: "#captions", title: "Legendas", symbol: "captions.bubble", tint: .purple)) }
@@ -1540,7 +1611,7 @@ private struct ProjectsSheet: View {
     }
 }
 
-private extension Color {
+extension Color {
     init(hex: String) {
         let cleaned = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
         guard let value = UInt64(cleaned, radix: 16) else { self = .white; return }

@@ -31,7 +31,9 @@ jobs:
             -destination 'generic/platform=iOS' -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build > build-device.log 2>&1 || true
           grep -E 'error:|BUILD (SUCCEEDED|FAILED)' build-device.log | sort -u | head -80 || true
-          test -d build/Build/Products/Release-iphoneos/EditorIA.app
+          # A pasta do app existe mesmo em build com erro; só vale se terminou e tem o executável.
+          grep -q 'BUILD SUCCEEDED' build-device.log
+          test -f build/Build/Products/Release-iphoneos/EditorIA.app/EditorIA
 
       - name: Criar arquivo IPA
         run: |
@@ -93,3 +95,7 @@ jobs:
           gh release create "build-${{ github.run_number }}-${{ github.run_attempt }}" EditorIA.ipa \
             --title "Editor IA · build ${{ github.run_number }}" \
             --notes "IPA sem assinatura. Instale pelo Sideloadly (veja INSTALAR_NO_IPHONE.md)."
+          # Mantém só a versão mais nova, para nunca baixar um arquivo antigo por engano.
+          gh release list --limit 50 --json tagName --jq '.[].tagName' | grep -v "^build-${{ github.run_number }}-${{ github.run_attempt }}$" | while read -r tag; do
+            gh release delete "$tag" --yes --cleanup-tag || true
+          done

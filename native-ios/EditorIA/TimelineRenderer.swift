@@ -250,7 +250,7 @@ enum TimelineCompositionBuilder {
     }
 
     /// Carrega a foto já reduzida e em pé, para muitas imagens não esgotarem a memória.
-    static func loadStill(url: URL, maxPixelSize: Int) -> CGImage? {
+    nonisolated static func loadStill(url: URL, maxPixelSize: Int) -> CGImage? {
         guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,

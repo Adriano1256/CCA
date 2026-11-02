@@ -70,7 +70,7 @@ enum LocalTranscriptionService {
         }
 
         // O reconhecedor trabalha melhor com áudio puro: extrai a faixa de som de vídeos antes.
-        let audioURL = try await extractAudio(from: url)
+        let audioURL = try await AudioExtractor.audioFile(from: url)
         defer { if audioURL != url { try? FileManager.default.removeItem(at: audioURL) } }
 
         return try await withCheckedThrowingContinuation { continuation in
@@ -105,28 +105,6 @@ enum LocalTranscriptionService {
             }
             retention.retain(task)
         }
-    }
-
-    private static func extractAudio(from url: URL) async throws -> URL {
-        let asset = AVURLAsset(url: url)
-        let videoTracks = try await asset.loadTracks(withMediaType: .video)
-        guard !videoTracks.isEmpty else { return url }
-        let audioTracks = try await asset.loadTracks(withMediaType: .audio)
-        guard !audioTracks.isEmpty else { throw LocalTranscriptionError.noResult }
-        guard let session = AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetAppleM4A) else {
-            throw LocalTranscriptionError.noResult
-        }
-        let output = FileManager.default.temporaryDirectory.appendingPathComponent("EditorIA-Fala-\(UUID().uuidString).m4a")
-        session.outputURL = output
-        session.outputFileType = .m4a
-        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-            session.exportAsynchronously { continuation.resume() }
-        }
-        guard session.status == .completed else {
-            try? FileManager.default.removeItem(at: output)
-            throw session.error ?? LocalTranscriptionError.noResult
-        }
-        return output
     }
 
     private static func requestAuthorization() async -> SFSpeechRecognizerAuthorizationStatus {
