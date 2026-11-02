@@ -8,9 +8,9 @@ on:
 permissions:
   contents: write
 
-# Um Mac de cada vez: os dois testes juntos ficavam sem computador na fila.
+# Uma execução de cada tipo por vez; a mais nova espera a anterior terminar.
 concurrency:
-  group: mac
+  group: ${{ github.workflow }}
   cancel-in-progress: false
 
 jobs:
