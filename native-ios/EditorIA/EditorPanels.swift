@@ -168,6 +168,8 @@ struct ModelManagerSheet: View {
                         .font(.subheadline)
                     Text("O download precisa de internet só uma vez, e use Wi-Fi: os arquivos são grandes. Nenhum vídeo é enviado.")
                         .font(.caption).foregroundStyle(.secondary)
+                    Text(AIStorageBudget.summary(installedBytes: models.installedBytes()))
+                        .font(.caption.weight(.semibold))
                 }
                 WhisperModelSection()
                 Section("Modelo de linguagem") { ForEach(LocalModel.catalog) { model in
@@ -189,7 +191,7 @@ struct ModelManagerSheet: View {
                             Button("Cancelar") { models.cancelDownload() }.font(.caption)
                         } else if models.installed.contains(model.id) {
                             HStack {
-                                Button(models.selectedID == model.id ? "Em uso" : "Usar este") { models.selectedID = model.id }
+                                Button(models.selectedID == model.id ? "Em uso" : "Usar este") { models.select(model) }
                                     .buttonStyle(.bordered)
                                     .disabled(models.selectedID == model.id)
                                 Button("Apagar", role: .destructive) { models.delete(model) }
@@ -820,7 +822,9 @@ struct WhisperModelSection: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(option.name).font(.headline)
                         Text(option.detail).font(.caption).foregroundStyle(.secondary)
-                        Button("Baixar") { download(option) }.buttonStyle(.borderedProminent)
+                        Button("Baixar") { download(option) }
+                            .buttonStyle(.borderedProminent)
+                            .disabled(!AIStorageBudget.fits(adding: option.bytes, installedBytes: ModelManager.installedBytesOnDisk()))
                     }
                 }
                 Text("Sem ele, o app tenta o reconhecimento do próprio iPhone, que pode não ter português offline.")
@@ -851,24 +855,30 @@ struct WhisperModelSection: View {
 
 struct CaptionStylePanel: View {
     @EnvironmentObject private var store: ProjectStore
+    @State private var category = CaptionPreset.categories[0]
+
+    private var current: CaptionPreset { CaptionPreset.find(store.project.captionStyle) ?? CaptionPreset.all[0] }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             Text("Legenda animada").font(.subheadline.bold())
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 104), spacing: 6)], spacing: 6) {
-                ForEach(CaptionAnimator.styles, id: \.id) { style in
-                    Button {
-                        store.setCaptionOption {
-                            $0.captionStyle = style.id
-                            $0.captionsEnabled = true
-                        }
-                    } label: {
-                        Text(style.name)
-                            .font(.caption)
-                            .frame(maxWidth: .infinity, minHeight: 44)
-                            .background(store.project.captionStyle == style.id ? Color.accentColor.opacity(0.4) : Color.secondary.opacity(0.14), in: RoundedRectangle(cornerRadius: 8))
+            CaptionLivePreview(preset: current, textHex: store.project.captionTextHex, highlightHex: store.project.captionHighlightHex)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(CaptionPreset.categories, id: \.self) { name in
+                        Button(name) { category = name }
+                            .font(.caption.weight(.medium))
+                            .padding(.horizontal, 12)
+                            .frame(minHeight: 34)
+                            .background(category == name ? Color.accentColor.opacity(0.45) : Color.secondary.opacity(0.14), in: Capsule())
+                            .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
+                }
+            }
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 104), spacing: 6)], spacing: 6) {
+                ForEach(CaptionPreset.all.filter { $0.category == category }) { preset in
+                    Button { choose(preset) } label: { card(preset) }
+                        .buttonStyle(.plain)
                 }
             }
             ColorPicker("Cor do destaque", selection: Binding(
@@ -888,12 +898,99 @@ struct CaptionStylePanel: View {
                 Slider(value: Binding(get: { store.project.captionVertical ?? 0.8 }, set: { value in store.setCaptionOption { $0.captionVertical = value } }), in: 0.1...0.95)
             }
             Picker("Fonte", selection: Binding(get: { store.project.captionFontStyle }, set: { value in store.setCaptionOption { $0.captionFontStyle = value } })) {
+                Text("Do estilo").tag("preset")
                 Text("Forte").tag("heavy")
-                Text("Arredondada").tag("rounded")
-                Text("Serifada").tag("serif")
+                Text("Redonda").tag("rounded")
+                Text("Serifa").tag("serif")
             }
             .pickerStyle(.segmented)
+            Toggle("Mostrar legendas", isOn: Binding(get: { store.project.captionsEnabled }, set: { value in store.setCaptionOption { $0.captionsEnabled = value } }))
+                .font(.caption)
         }
+    }
+
+    private func choose(_ preset: CaptionPreset) {
+        let clientColor = preset.id == "inst-cor" ? store.currentClient?.primaryHex : nil
+        store.setCaptionOption {
+            preset.apply(to: &$0)
+            if let clientColor { $0.captionHighlightHex = clientColor }
+        }
+    }
+
+    private func card(_ preset: CaptionPreset) -> some View {
+        VStack(spacing: 2) {
+            Text(preset.upper ? "VIRAL" : "Viral")
+                .font(.custom(preset.font, size: 19))
+                .foregroundStyle(Color(hex: preset.highlight))
+                .shadow(color: preset.stroke == nil ? .clear : .black, radius: 1)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+            Text(preset.name)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+        }
+        .frame(maxWidth: .infinity, minHeight: 58)
+        .padding(.horizontal, 4)
+        .background(store.project.captionStyle == preset.id ? Color.accentColor.opacity(0.4) : Color.black.opacity(0.35), in: RoundedRectangle(cornerRadius: 10))
+    }
+}
+
+/// Mostra o estilo escolhido se mexendo, mesmo antes de o vídeo ter legenda.
+struct CaptionLivePreview: View {
+    let preset: CaptionPreset
+    let textHex: String
+    let highlightHex: String
+
+    private static let sample: [CaptionWord] = ["Agora", "a", "nossa", "rua", "tem", "asfalto", "novo"].enumerated().map {
+        CaptionWord(text: $0.element, start: 0.2 + Double($0.offset) * 0.42, duration: 0.38)
+    }
+
+    var body: some View {
+        TimelineView(.animation) { context in
+            let time = context.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 3.6)
+            let frame = CaptionAnimator.frame(style: preset.id, words: Self.sample, at: time)
+            ZStack {
+                LinearGradient(colors: [Color(white: 0.28), Color(white: 0.1)], startPoint: .top, endPoint: .bottom)
+                if let frame {
+                    HStack(spacing: preset.wordBox == nil ? 6 : 3) {
+                        ForEach(Array(frame.words.enumerated()), id: \.offset) { _, word in
+                            wordView(word, size: 22 * frame.sizeFactor)
+                        }
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(preset.lineBox.map { Color(hex: String($0.prefix(7))).opacity(0.75) } ?? .clear, in: RoundedRectangle(cornerRadius: 8))
+                    .minimumScaleFactor(0.5)
+                }
+            }
+            .frame(height: 96)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .accessibilityLabel("Prévia da legenda \(preset.name)")
+    }
+
+    @ViewBuilder
+    private func wordView(_ word: CaptionAnimator.WordVisual, size: Double) -> some View {
+        let color = word.hasBox ? preset.boxText : (word.color ?? ((word.isActive || word.isKeyword || (word.fill ?? 0) > 0.5) ? highlightHex : textHex))
+        let box = word.hasBox ? highlightHex : preset.wordBox
+        Text(word.text)
+            .font(word.isEmoji ? .system(size: size) : .custom(preset.font, size: word.isKeyword ? size * 1.2 : size))
+            .foregroundStyle(Color(hex: color))
+            .lineLimit(1)
+            .padding(.horizontal, box == nil ? 0 : 4)
+            .background(box.map { Color(hex: $0) } ?? .clear, in: RoundedRectangle(cornerRadius: 4))
+            .overlay(alignment: .bottom) {
+                if word.underline { Rectangle().fill(Color(hex: highlightHex)).frame(height: 3) }
+            }
+            .shadow(color: preset.stroke != nil || preset.shadow == .hard ? .black : .clear, radius: 0.6, x: 1, y: 1)
+            .shadow(color: (preset.shadow == .glow || word.glow) ? Color(hex: highlightHex) : .clear, radius: 6)
+            .scaleEffect(x: word.state.scale, y: word.state.scale * word.state.scaleY)
+            .rotationEffect(.degrees(word.state.rotation))
+            .offset(x: word.state.offsetX * 340, y: word.state.offsetY * 340)
+            .blur(radius: word.state.blur / 4)
+            .opacity(word.state.opacity)
     }
 }
 

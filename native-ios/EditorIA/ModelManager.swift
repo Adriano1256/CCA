@@ -37,13 +37,46 @@ final class ModelManager: NSObject, ObservableObject {
         configuration.sessionSendsLaunchEvents = false
         session = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
         refresh()
+        var guardState = ModelGuardStore.load()
+        if let crashed = guardState.recover() {
+            ModelGuardStore.save(guardState)
+            let name = LocalModel.catalog.first { $0.id == crashed }?.name ?? "O modelo"
+            if guardState.isBlocked(crashed) {
+                message = "\(name) não coube na memória deste aparelho. Passei para outro modelo instalado. Toque em Usar este para tentar de novo."
+            } else {
+                message = "\(name) fechou o app por falta de memória. Vou tentar de novo usando menos memória."
+            }
+        }
     }
+
+    /// Usuário escolheu este modelo: ele merece nova tentativa.
+    func select(_ model: LocalModel) {
+        var guardState = ModelGuardStore.load()
+        guardState.crashes[model.id] = nil
+        ModelGuardStore.save(guardState)
+        selectedID = model.id
+    }
+
+    nonisolated static func installedBytesOnDisk() -> Int64 {
+        func size(_ folder: URL) -> Int64 {
+            guard let files = FileManager.default.enumerator(at: folder, includingPropertiesForKeys: [.fileSizeKey]) else { return 0 }
+            var total: Int64 = 0
+            for case let file as URL in files {
+                total += Int64((try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
+            }
+            return total
+        }
+        return size(directory) + size(WhisperService.directory)
+    }
+
+    func installedBytes() -> Int64 { Self.installedBytesOnDisk() }
 
     var recommended: LocalModel { LocalModel.recommended(memoryGB: memoryGB) }
     var selected: LocalModel? { LocalModel.catalog.first { $0.id == selectedID } }
     var activeModel: LocalModel? {
-        if let selected, installed.contains(selected.id) { return selected }
-        return LocalModel.catalog.first { installed.contains($0.id) }
+        let guardState = ModelGuardStore.load()
+        if let selected, installed.contains(selected.id), !guardState.isBlocked(selected.id) { return selected }
+        return LocalModel.catalog.last { installed.contains($0.id) && !guardState.isBlocked($0.id) }
     }
 
     func url(for model: LocalModel) -> URL {
@@ -63,6 +96,10 @@ final class ModelManager: NSObject, ObservableObject {
         guard downloadingID == nil else { message = "Aguarde o download em andamento."; return }
         guard freeSpaceBytes() > model.approximateBytes + 500_000_000 else {
             message = "Falta espaço no aparelho para este modelo."
+            return
+        }
+        guard AIStorageBudget.fits(adding: model.approximateBytes, installedBytes: installedBytes()) else {
+            message = "Este modelo passaria do limite de 8 GB do app. Apague outro modelo primeiro."
             return
         }
         guard let url = URL(string: model.url) else { return }
@@ -224,11 +261,15 @@ final class AgentController: ObservableObject {
         let flag = stopFlag
         let grammar = AgentProtocol.grammar
         let existing = engineModelID == model.id ? engine : nil
+        var guardState = ModelGuardStore.load()
+        let contextSize = guardState.contextSize(for: model)
+        guardState.pending = model.id
+        ModelGuardStore.save(guardState)
 
         Task {
             do {
                 let result = try await Task.detached(priority: .userInitiated) { () throws -> (LlamaEngine, String) in
-                    let active = try existing ?? LlamaEngine(path: modelURL.path, contextSize: model.contextSize)
+                    let active = try existing ?? LlamaEngine(path: modelURL.path, contextSize: contextSize)
                     let raw = try active.generate(prompt: prompt, grammar: grammar, shouldStop: { flag.isSet }, onProgress: { count in
                         Task { @MainActor [weak self] in self?.tokens = count }
                     })
@@ -256,7 +297,27 @@ final class AgentController: ObservableObject {
                     messages.append(Message(fromUser: false, text: error.localizedDescription))
                 }
             }
+            var finished = ModelGuardStore.load()
+            finished.pending = nil
+            ModelGuardStore.save(finished)
             isThinking = false
         }
+    }
+}
+
+/// Guarda em disco o que a IA estava fazendo, para saber na próxima abertura se o app caiu por falta de memória.
+enum ModelGuardStore {
+    private static let pendingKey = "EditorIA.modelPending"
+    private static let crashesKey = "EditorIA.modelCrashes"
+
+    static func load() -> ModelCrashGuard {
+        let defaults = UserDefaults.standard
+        return ModelCrashGuard(pending: defaults.string(forKey: pendingKey), crashes: defaults.dictionary(forKey: crashesKey) as? [String: Int] ?? [:])
+    }
+
+    static func save(_ state: ModelCrashGuard) {
+        let defaults = UserDefaults.standard
+        defaults.set(state.pending, forKey: pendingKey)
+        defaults.set(state.crashes, forKey: crashesKey)
     }
 }

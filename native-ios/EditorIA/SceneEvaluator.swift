@@ -5,6 +5,8 @@ import Foundation
 struct LayerState: Equatable {
     var opacity = 1.0
     var scale = 1.0
+    /// Achatamento ou esticada na vertical, além da escala.
+    var scaleY = 1.0
     /// Deslocamento em frações da largura e da altura do quadro.
     var offsetX = 0.0
     var offsetY = 0.0

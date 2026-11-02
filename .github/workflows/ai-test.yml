@@ -21,6 +21,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Preparar
         run: |
+          set -o pipefail
+          mkdir -p ai-report tests/aitest/Sources/aitest
           cd tests/aitest
           N=../../native-ios/EditorIA
           cp main.swift.txt Sources/aitest/main.swift
@@ -29,16 +31,16 @@ jobs:
 
           struct MotionTemplate: Codable { var id: String }
           SWIFT
-          for f in LocalLLM AgentCore ProjectModel TimelineCore AudioDuckingPlanner DirectorPlanningCore DirectorTimelineMaterializer SceneEvaluator; do cp $N/$f.swift Sources/aitest/; done
-          swift build -c release 2>&1 | tail -15
+          for f in LocalLLM AgentCore CaptionPresets ProjectModel TimelineCore AudioDuckingPlanner DirectorPlanningCore DirectorTimelineMaterializer SceneEvaluator; do cp $N/$f.swift Sources/aitest/; done
+          swift build -c release 2>&1 | tee ../../ai-report/compilacao.txt | tail -15
       - name: Rodar os modelos
         run: |
           mkdir -p ai-report
-          for spec in "qwen|https://huggingface.co/unsloth/Qwen3.5-2B-GGUF/resolve/main/Qwen3.5-2B-Q4_K_M.gguf" "gemma|https://huggingface.co/unsloth/gemma-4-E2B-it-qat-mobile-GGUF/resolve/main/gemma-4-E2B-it-qat-UD-Q2_K_XL.gguf"; do
-            FORMAT=${spec%%|*}; URL=${spec#*|}
+          for spec in "qwen|qwen|https://huggingface.co/unsloth/Qwen3.5-2B-GGUF/resolve/main/Qwen3.5-2B-Q4_K_M.gguf" "gemma-e2b|gemma|https://huggingface.co/unsloth/gemma-4-E2B-it-qat-mobile-GGUF/resolve/main/gemma-4-E2B-it-qat-UD-Q2_K_XL.gguf" "gemma-12b|gemma|https://huggingface.co/unsloth/gemma-4-12b-it-GGUF/resolve/main/gemma-4-12b-it-UD-Q3_K_XL.gguf"; do
+            NAME=${spec%%|*}; REST=${spec#*|}; FORMAT=${REST%%|*}; URL=${REST#*|}
             curl -sSL -o model.gguf "$URL"
             ls -lh model.gguf
-            (cd tests/aitest && ./.build/release/aitest ../../model.gguf "$FORMAT" 3) 2>/dev/null | tee "ai-report/$FORMAT.txt" || true
+            (cd tests/aitest && perl -e 'alarm 2400; exec @ARGV' ./.build/release/aitest ../../model.gguf "$FORMAT" 3) 2>/dev/null | tee "ai-report/$NAME.txt" || true
             rm -f model.gguf
           done
       - name: Publicar resultado

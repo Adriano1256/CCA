@@ -290,7 +290,16 @@ enum SceneAndAgentTests {
     static func modelRecommendation() {
         precondition(LocalModel.recommended(memoryGB: 6).id == "qwen35-2b-q4", "iPhone de 6 GB")
         precondition(LocalModel.recommended(memoryGB: 8).id == "gemma4-e2b-qat", "iPhone de 8 GB")
-        precondition(LocalModel.recommended(memoryGB: 12).id == "gemma4-e4b", "iPhone de 12 GB")
+        precondition(LocalModel.recommended(memoryGB: 11.5).id == "gemma4-12b", "iPhone de 12 GB usa o maior")
+        precondition(AIStorageBudget.fits(adding: 6_000_000_000 + 626_000_000, installedBytes: 0), "Maior modelo e Whisper cabem nos 8 GB")
+        precondition(!AIStorageBudget.fits(adding: 3_800_000_000, installedBytes: 6_626_000_000), "Passar de 8 GB é recusado")
+        var crash = ModelCrashGuard(pending: "gemma4-12b")
+        precondition(crash.recover() == "gemma4-12b" && crash.pending == nil && !crash.isBlocked("gemma4-12b"), "Primeira queda ainda tenta")
+        precondition(crash.contextSize(for: LocalModel.catalog.last!) == 4096, "Depois da queda usa menos memória")
+        crash.pending = "gemma4-12b"
+        _ = crash.recover()
+        precondition(crash.isBlocked("gemma4-12b"), "Segunda queda troca de modelo")
+        precondition(crash.recover() == nil, "Sem queda não muda nada")
         precondition(LocalModel.recommended(memoryGB: 4).id == "qwen35-2b-q4", "Menor opção")
         precondition(LocalModel.looksValid(header: Array("GGUFxx".utf8), fileSize: 100, expected: 100), "Arquivo válido")
         precondition(!LocalModel.looksValid(header: Array("<html".utf8), fileSize: 100, expected: 100), "Página de erro não vale")
@@ -379,6 +388,52 @@ enum SceneAndAgentTests {
         let slam = CaptionAnimator.frame(style: "slam", words: words, at: 1.5)!
         precondition(slam.words.count == 1 && slam.words[0].text == "RUA", "Impacto: uma palavra em maiúsculas")
         precondition(CaptionAnimator.frame(style: "pop", words: words, at: 1.5)!.words[1].state.scale > 1.1, "Palavra salta")
+        presetsAreSound()
+    }
+
+    static func presetsAreSound() {
+        let all = CaptionPreset.all
+        precondition(all.count >= 50, "Muitos estilos: \(all.count)")
+        precondition(Set(all.map(\.id)).count == all.count, "Sem identificador repetido")
+        precondition(all.allSatisfy { CaptionPreset.categories.contains($0.category) }, "Toda legenda tem categoria")
+        let words = ["Agora", "a", "nossa", "rua", "tem", "asfalto", "novo", "em", "2026."].enumerated().map { CaptionWord(text: $0.element, start: Double($0.offset) * 0.4, duration: 0.36) }
+        for preset in all {
+            var time = 0.0
+            while time < 4 {
+                if let frame = CaptionAnimator.frame(style: preset.id, words: words, at: time) {
+                    precondition(!frame.words.isEmpty, "\(preset.id) tem palavras")
+                    for word in frame.words {
+                        precondition(word.state.opacity >= 0 && word.state.opacity <= 1, "\(preset.id) opacidade")
+                        precondition(word.state.scale.isFinite && word.state.offsetX.isFinite && word.state.rotation.isFinite, "\(preset.id) números válidos")
+                        precondition(!word.text.isEmpty, "\(preset.id) texto")
+                    }
+                }
+                time += 1.0 / 30
+            }
+            // Passada a entrada, a palavra fica visível e no lugar.
+            if preset.scope != .single, let settled = CaptionAnimator.frame(style: preset.id, words: words, at: 0.35 + 0.0) {
+                precondition(settled.words.contains { $0.state.opacity > 0 }, "\(preset.id) mostra a palavra")
+            }
+            // Igual a cada render: a exportação não pode variar.
+            precondition(CaptionAnimator.frame(style: preset.id, words: words, at: 1.23) == CaptionAnimator.frame(style: preset.id, words: words, at: 1.23), "\(preset.id) repetível")
+        }
+        let hormozi = CaptionAnimator.frame(style: "hormozi", words: words, at: 2.05)!
+        precondition(hormozi.words.allSatisfy { $0.text == $0.text.uppercased() }, "Hormozi em maiúsculas")
+        precondition(hormozi.words.contains { $0.isKeyword }, "Palavra forte destacada")
+        let beast = CaptionAnimator.frame(style: "mrbeast", words: words, at: 0.05)!
+        precondition(beast.words.first?.color != nil, "MrBeast reveza cores")
+        let fill = CaptionAnimator.frame(style: "karaoke-fill", words: words, at: 0.18)!
+        precondition((fill.words[0].fill ?? 0) > 0.3 && (fill.words[0].fill ?? 1) < 0.7, "Preenche a palavra enquanto fala")
+        let emoji = CaptionAnimator.frame(style: "emoji-viral", words: words, at: 2.1)!
+        precondition(emoji.words.contains { $0.isEmoji }, "Emoji aparece em palavra conhecida")
+        precondition(CaptionWords.isKeyword("2026") && CaptionWords.isKeyword("asfalto") && !CaptionWords.isKeyword("rua"), "Palavras fortes")
+        precondition(CaptionPreset.match("quero legenda estilo MrBeast")?.id == "mrbeast", "Chat entende MrBeast")
+        precondition(CaptionPreset.match("legenda neon")?.id == "neon", "Chat entende neon")
+        precondition(CaptionPreset.match("legenda de prefeitura")?.category == "Institucional", "Chat entende prefeitura")
+        precondition(CaptionPreset.find("nao existe") == nil, "Estilo desconhecido")
+        var project = EditorProject()
+        CaptionPreset.find("quadrinhos")!.apply(to: &project)
+        precondition(project.captionStyle == "quadrinhos" && project.captionTextHex == "#FFEB3B" && project.captionFontStyle == "preset", "Preset vai para o projeto")
     }
 
     static func cleanerDropsNoise() {

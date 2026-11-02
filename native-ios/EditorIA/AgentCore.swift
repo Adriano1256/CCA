@@ -84,7 +84,7 @@ enum AgentProtocol {
     transition(clip ou track,kind,value) kind: dissolve slideLeft slideUp zoom wipe flash; value é a duração
     ken_burns(clip ou track) zoom lento em foto; zoom(clip,value) zoom até value ao longo do clipe
     mark_sonora(clip) marca que o clipe tem fala; assemble(kind) kind: institucional ou stories, monta a timeline
-    caption_style(kind) legenda animada, kind: karaoke box pop reveal slam word phrase; caption_color(text) cor em hex como #FFD84D; caption_size(value) 40 a 140; captions_off() tira as legendas
+    caption_style(kind) legenda animada, kind: hormozi hormozi-classico mrbeast podcast tiktok-caixa tiktok-branca reels-pop verde-viral roxo-viral marca-texto emoji-viral palavra-forte foco sublinhado karaoke karaoke-fill karaoke-azul box reveal phrase onda balanco slam word pop gigante corte-seco tremor sombra-dura fogo militar giro esticado quadrinhos desenho bolha caneta caderno recadinho praia neon neon-rosa glitch maquina retro-game bloco placar elegante cinema luxo ouro minimalista editorial inst-limpa inst-faixa inst-cor inst-noticia inst-sublinhado katana motion-ia dois-mundos. Em vídeo de prefeitura prefira os inst-; caption_color(text) cor em hex como #FFD84D; caption_size(value) 40 a 140; captions_off() tira as legendas
     ducking(value) volume da música sob a fala, 0.05 a 0.8; fade(clip ou track,kind,value) kind: in ou out, value em segundos
     look(clip ou track,kind) kind: natural quente frio vibrante cinema "preto e branco"
     music(kind) coloca música da biblioteca pelo clima: emocionante inspirador "obra e trabalho" festa corporativo suave impacto
@@ -307,10 +307,9 @@ enum AgentExecutor {
                 outcome.project.profile = draft.profile
                 outcome.done.append("Montagem \(draft.profile) aplicada; falas inteiras")
             case "caption_style":
-                if let kind = action.kind, CaptionAnimator.styles.contains(where: { $0.id == kind }) {
-                    outcome.project.captionStyle = kind
-                    outcome.project.captionsEnabled = true
-                    outcome.done.append("Estilo de legenda: \(kind)")
+                if let kind = action.kind, let preset = CaptionPreset.find(kind) ?? CaptionPreset.match(kind) {
+                    preset.apply(to: &outcome.project)
+                    outcome.done.append("Legenda: \(preset.name)")
                 } else {
                     outcome.blocked.append("Estilo de legenda desconhecido")
                 }
@@ -426,6 +425,17 @@ struct LocalModel: Identifiable, Equatable {
             format: .gemma,
             minimumMemoryGB: 11,
             contextSize: 8192
+        ),
+        LocalModel(
+            id: "gemma4-12b",
+            name: "Gemma 4 12B",
+            detail: "O maior que cabe em um iPhone de 12 GB. Entende melhor pedidos difíceis e responde mais devagar. Licença Apache 2.0.",
+            url: "https://huggingface.co/unsloth/gemma-4-12b-it-GGUF/resolve/main/gemma-4-12b-it-UD-Q3_K_XL.gguf",
+            fileName: "gemma-4-12b-it-UD-Q3_K_XL.gguf",
+            approximateBytes: 6_000_000_000,
+            format: .gemma,
+            minimumMemoryGB: 11,
+            contextSize: 8192
         )
     ]
 
@@ -506,11 +516,10 @@ enum RuleAgent {
         }
         if has("legenda") {
             if has("tira", "remove", "desliga", "sem legenda") { return AgentPlan(reply: "Legendas desligadas.", actions: [AgentAction(tool: "captions_off")]) }
-            var kind = "karaoke"
-            if has("caixa") { kind = "box" } else if has("impacto", "uma palavra") { kind = "slam" } else if has("salta", "pula") { kind = "pop" } else if has("aparec") { kind = "reveal" } else if has("simples") { kind = "phrase" }
-            var actions = [AgentAction(tool: "caption_style", kind: kind)]
+            let preset = CaptionPreset.match(text) ?? CaptionPreset.find("karaoke")!
+            var actions = [AgentAction(tool: "caption_style", kind: preset.id)]
             if !project.media.contains(where: { !$0.transcript.isEmpty }) { actions.insert(AgentAction(tool: "transcribe"), at: 0) }
-            return AgentPlan(reply: "Legenda animada aplicada.", actions: actions)
+            return AgentPlan(reply: "Legenda \(preset.name) aplicada.", actions: actions)
         }
         if has("broll", "b-roll", "b roll", "imagens de apoio") && has("tira o som", "sem som", "muda", "mudo") {
             return AgentPlan(reply: "B-roll sem som.", actions: [AgentAction(tool: "set_volume", track: "broll", value: 0)])
@@ -531,4 +540,39 @@ enum RuleAgent {
         }
         return nil
     }
+}
+
+
+/// O app e tudo que ele baixa para a IA não passam de 8 GB. Vídeos do usuário não entram nesta conta.
+enum AIStorageBudget {
+    static let limitBytes: Int64 = 8_000_000_000
+    /// Tamanho aproximado do app instalado.
+    static let appBytes: Int64 = 300_000_000
+
+    static func used(installedBytes: Int64) -> Int64 { appBytes + installedBytes }
+
+    static func fits(adding bytes: Int64, installedBytes: Int64) -> Bool {
+        used(installedBytes: installedBytes) + bytes <= limitBytes
+    }
+
+    static func summary(installedBytes: Int64) -> String {
+        String(format: "App e IA: %.1f de 8 GB", Double(used(installedBytes: installedBytes)) / 1_000_000_000)
+    }
+}
+
+/// Se o app fechar sozinho durante a IA, foi falta de memória. Na volta, reduz o contexto ou troca de modelo.
+struct ModelCrashGuard {
+    var pending: String?
+    var crashes: [String: Int] = [:]
+
+    /// Chamado ao abrir o app. Devolve o modelo que derrubou o app na última vez.
+    mutating func recover() -> String? {
+        guard let model = pending else { return nil }
+        pending = nil
+        crashes[model, default: 0] += 1
+        return model
+    }
+
+    func isBlocked(_ id: String) -> Bool { (crashes[id] ?? 0) >= 2 }
+    func contextSize(for model: LocalModel) -> Int { (crashes[model.id] ?? 0) >= 1 ? min(4096, model.contextSize) : model.contextSize }
 }

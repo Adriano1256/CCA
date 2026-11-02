@@ -4,6 +4,7 @@ import CoreImage
 import CoreVideo
 import ImageIO
 import UIKit
+import CoreText
 
 /// Tudo que o compositor precisa para desenhar um quadro. Não muda depois de criado.
 final class CompositionScene: @unchecked Sendable {
@@ -109,8 +110,9 @@ final class FrameRenderer {
     private var chromaCubes: [String: Data] = [:]
 
     init() {
+        _ = CaptionFonts.register
         stills.countLimit = 40
-        textImages.countLimit = 300
+        textImages.countLimit = 600
     }
 
     func render(scene: CompositionScene, time: Double, into output: CVPixelBuffer, source: (CMPersistentTrackID) -> CVPixelBuffer?) {
@@ -146,7 +148,7 @@ final class FrameRenderer {
         var layer = image
         if state.blur > 0.01 { layer = layer.applyingGaussianBlur(sigma: state.blur) }
         var transform = CGAffineTransform(translationX: -center.x, y: -center.y)
-        transform = transform.concatenating(CGAffineTransform(scaleX: CGFloat(state.scale), y: CGFloat(state.scale)))
+        transform = transform.concatenating(CGAffineTransform(scaleX: CGFloat(state.scale), y: CGFloat(state.scale * state.scaleY)))
         // Rotação positiva é horária na tela; no Core Image o eixo Y sobe.
         transform = transform.concatenating(CGAffineTransform(rotationAngle: -CGFloat(state.rotation) * .pi / 180))
         transform = transform.concatenating(CGAffineTransform(
@@ -386,33 +388,20 @@ final class FrameRenderer {
     private func drawCaptions(scene: CompositionScene, time: Double, over canvas: CIImage) -> CIImage {
         let project = scene.project
         guard project.captionsEnabled, let caption = CaptionAnimator.frame(style: project.captionStyle, words: scene.sortedCaptions, at: time) else { return canvas }
+        let preset = caption.preset
         let size = scene.renderSize
         let frame = CGRect(origin: .zero, size: size)
         let fontSize = CGFloat(project.captionFontSize * caption.sizeFactor)
-        let captionFont = font(style: project.captionFontStyle, size: fontSize)
-        let shadow = NSShadow()
-        shadow.shadowColor = UIColor.black
-        shadow.shadowBlurRadius = fontSize * 0.12
-        shadow.shadowOffset = CGSize(width: 0, height: fontSize * 0.04)
-        let textColor = FrameRenderer.uiColor(hex: project.captionTextHex)
-        let highlight = FrameRenderer.uiColor(hex: project.captionHighlightHex)
+        let maxWidth = size.width * 0.9
 
-        let images: [CIImage?] = caption.words.map { word in
-            // Na caixa, a palavra fica escura sobre a cor de destaque, para dar leitura.
-            let color = word.hasBox ? UIColor.black : (word.isActive ? highlight : textColor)
-            let attributes: [NSAttributedString.Key: Any] = word.hasBox
-                ? [.font: captionFont, .foregroundColor: color]
-                : [.font: captionFont, .foregroundColor: color, .shadow: shadow]
-            let key = "c|\(project.captionFontStyle)|\(fontSize)|\(word.hasBox ? "box\(project.captionHighlightHex)" : word.isActive ? project.captionHighlightHex : project.captionTextHex)|\(word.text)"
-            return textImage(NSAttributedString(string: word.text, attributes: attributes), key: key, maxWidth: size.width * 0.88, background: word.hasBox ? highlight : nil, padding: fontSize * 0.14)
-        }
+        let images: [CIImage?] = caption.words.map { captionImage($0, preset: preset, project: project, fontSize: fontSize, maxWidth: maxWidth) }
 
-        // Linhas centralizadas que quebram na área segura.
-        let maxWidth = size.width * 0.88
+        let hasBoxes = preset.wordBox != nil || preset.active == .box
+        let gap = hasBoxes ? fontSize * 0.1 : 0
         var lines: [[Int]] = [[]]
         var used: CGFloat = 0
         for (index, image) in images.enumerated() {
-            let width = image?.extent.width ?? 0
+            let width = (image?.extent.width ?? 0) + gap
             if used + width > maxWidth, !(lines.last ?? []).isEmpty {
                 lines.append([])
                 used = 0
@@ -420,24 +409,195 @@ final class FrameRenderer {
             lines[lines.count - 1].append(index)
             used += width
         }
-        let lineHeight = (images.compactMap { $0?.extent.height }.max() ?? fontSize) * 0.92
+        let tallest = images.compactMap { $0?.extent.height }.max() ?? fontSize
+        let lineHeight = hasBoxes || preset.lineBox != nil ? tallest + gap : tallest * 0.9
         let vertical = project.captionVertical ?? CaptionLayout.defaultVertical(width: Double(size.width), height: Double(size.height))
         let centerY = size.height * CGFloat(1 - vertical)
         var result = canvas
         for (lineIndex, line) in lines.enumerated() {
-            let total = line.reduce(CGFloat(0)) { $0 + (images[$1]?.extent.width ?? 0) }
+            let total = line.reduce(CGFloat(0)) { $0 + (images[$1]?.extent.width ?? 0) } + gap * CGFloat(max(0, line.count - 1))
             var x = (size.width - total) / 2
             let y = centerY + (CGFloat(lines.count - 1) / 2 - CGFloat(lineIndex)) * lineHeight
+            if let band = preset.lineBox, let bar = captionBar(hex: band, width: total + fontSize * 0.5, height: tallest) {
+                let visible = caption.words.first.map { min(1, $0.state.opacity) } ?? 1
+                var bandState = LayerState()
+                bandState.opacity = visible
+                let center = CGPoint(x: size.width / 2, y: y)
+                result = composite(bar.transformed(by: CGAffineTransform(translationX: center.x - bar.extent.width / 2, y: y - bar.extent.height / 2)), state: bandState, center: center, frame: frame, over: result)
+            }
             for index in line {
                 guard let image = images[index] else { continue }
+                let word = caption.words[index]
                 let point = CGPoint(x: x + image.extent.width / 2, y: y)
-                let moved = image.transformed(by: CGAffineTransform(translationX: point.x - image.extent.width / 2, y: point.y - image.extent.height / 2))
-                result = composite(moved, state: caption.words[index].state, center: point, frame: frame, over: result)
-                x += image.extent.width
+                let moved = image.transformed(by: CGAffineTransform(translationX: x, y: y - image.extent.height / 2))
+                if word.split > 0, word.state.opacity > 0 {
+                    let shift = fontSize * 0.05 * CGFloat(word.split)
+                    for (tint, direction) in [("#FF0044", CGFloat(-1)), ("#00E5FF", CGFloat(1))] {
+                        var ghost = word
+                        ghost.split = 0
+                        ghost.isActive = false
+                        ghost.color = tint
+                        if let copy = captionImage(ghost, preset: preset, project: project, fontSize: fontSize, maxWidth: maxWidth) {
+                            let placed = copy.transformed(by: CGAffineTransform(translationX: x + direction * shift, y: y - copy.extent.height / 2))
+                            var state = word.state
+                            state.opacity *= 0.75
+                            result = composite(placed, state: state, center: point, frame: frame, over: result)
+                        }
+                    }
+                }
+                result = composite(moved, state: word.state, center: point, frame: frame, over: result)
+                if word.underline, let bar = captionBar(hex: project.captionHighlightHex, width: image.extent.width - fontSize * 0.25, height: max(4, fontSize * 0.09)) {
+                    let bottom = y - image.extent.height / 2 + fontSize * 0.1
+                    let placed = bar.transformed(by: CGAffineTransform(translationX: point.x - bar.extent.width / 2, y: bottom))
+                    result = composite(placed, state: word.state, center: point, frame: frame, over: result)
+                }
+                x += image.extent.width + gap
             }
         }
         return result
     }
+
+    /// Desenha uma palavra com o visual do preset. Fica em cache: só a animação muda de quadro para quadro.
+    private func captionImage(_ word: CaptionAnimator.WordVisual, preset: CaptionPreset, project: EditorProject, fontSize baseSize: CGFloat, maxWidth: CGFloat) -> CIImage? {
+        let fontSize = baseSize * (word.isKeyword ? 1.2 : 1)
+        let useBox = word.hasBox || preset.wordBox != nil
+        let active = word.color ?? ((word.isActive || word.isKeyword) ? project.captionHighlightHex : project.captionTextHex)
+        let base = word.hasBox ? preset.boxText : active
+        let fontName = word.isEmoji ? "emoji" : (project.captionFontStyle == "preset" ? preset.font : project.captionFontStyle)
+        let captionFont: UIFont = word.isEmoji ? UIFont.systemFont(ofSize: fontSize) : (project.captionFontStyle == "preset" ? (UIFont(name: preset.font, size: fontSize) ?? font(style: "heavy", size: fontSize)) : font(style: project.captionFontStyle, size: fontSize))
+        let boxColor = word.hasBox ? project.captionHighlightHex : preset.wordBox
+        let useGradient = !preset.gradient.isEmpty && !word.isEmoji && word.color == nil && !word.isActive
+
+        func picture(color: String, gradient: Bool) -> CIImage? {
+            let key = "cap|\(fontName)|\(fontSize)|\(color)|\(boxColor ?? "")|\(preset.id)|\(word.glow)|\(gradient)|\(word.text)"
+            if let cached = textImages.object(forKey: key as NSString) { return cached }
+            let fill = FrameRenderer.uiColor(hex: color)
+            let plain: [NSAttributedString.Key: Any] = [.font: captionFont, .foregroundColor: fill]
+            let text = NSAttributedString(string: word.text, attributes: plain)
+            let measured = text.boundingRect(with: CGSize(width: 10_000, height: 10_000), options: [.usesLineFragmentOrigin, .usesFontLeading], context: nil)
+            let stroke = word.isEmoji ? 0 : CGFloat(preset.strokeWidth) * fontSize
+            let glowing = (preset.shadow == .glow || word.glow) && !word.isEmoji
+            let padding = fontSize * (useBox ? 0.16 : 0.1) + stroke + (glowing ? fontSize * 0.25 : 0) + (preset.shadow == .hard ? fontSize * 0.07 : 0)
+            let canvasSize = CGSize(width: ceil(measured.width) + padding * 2, height: ceil(measured.height) + padding * 2)
+            guard canvasSize.width > 0, canvasSize.height > 0 else { return nil }
+            let textRect = CGRect(x: padding, y: padding, width: ceil(measured.width), height: ceil(measured.height))
+            let format = UIGraphicsImageRendererFormat()
+            format.scale = 1
+            format.opaque = false
+            let rendered = UIGraphicsImageRenderer(size: canvasSize, format: format).image { renderer in
+                let cg = renderer.cgContext
+                cg.setLineJoin(.round)
+                if useBox, let boxColor {
+                    FrameRenderer.uiColor(hex: boxColor).setFill()
+                    UIBezierPath(roundedRect: CGRect(origin: .zero, size: canvasSize), cornerRadius: fontSize * 0.18).fill()
+                }
+                func draw(_ attributes: [NSAttributedString.Key: Any], offset: CGPoint = .zero) {
+                    NSAttributedString(string: word.text, attributes: attributes).draw(with: textRect.offsetBy(dx: offset.x, dy: offset.y), options: [.usesLineFragmentOrigin, .usesFontLeading], context: nil)
+                }
+                if !useBox, !word.isEmoji {
+                    switch preset.shadow {
+                    case .hard:
+                        let depth = fontSize * 0.055
+                        var attributes = plain
+                        attributes[.foregroundColor] = UIColor.black
+                        if stroke > 0 {
+                            attributes[.strokeColor] = UIColor.black
+                            attributes[.strokeWidth] = Double(stroke / fontSize * 200)
+                        }
+                        draw(attributes, offset: CGPoint(x: depth, y: depth))
+                    case .soft:
+                        let shadow = NSShadow()
+                        shadow.shadowColor = UIColor.black.withAlphaComponent(0.85)
+                        shadow.shadowBlurRadius = fontSize * 0.14
+                        shadow.shadowOffset = CGSize(width: 0, height: fontSize * 0.04)
+                        var attributes = plain
+                        attributes[.shadow] = shadow
+                        draw(attributes)
+                    case .glow, .none:
+                        break
+                    }
+                }
+                if glowing {
+                    let shadow = NSShadow()
+                    shadow.shadowColor = FrameRenderer.uiColor(hex: word.glow ? project.captionHighlightHex : color)
+                    shadow.shadowBlurRadius = fontSize * 0.32
+                    var attributes = plain
+                    attributes[.shadow] = shadow
+                    draw(attributes)
+                    draw(attributes)
+                }
+                if stroke > 0, let strokeHex = preset.stroke {
+                    var attributes = plain
+                    attributes[.strokeColor] = FrameRenderer.uiColor(hex: strokeHex)
+                    attributes[.strokeWidth] = Double(stroke / fontSize * 200)
+                    draw(attributes)
+                }
+                var fillAttributes = plain
+                if gradient, let pattern = Self.gradientColor(preset.gradient, height: canvasSize.height) {
+                    fillAttributes[.foregroundColor] = pattern
+                }
+                draw(fillAttributes)
+            }
+            guard let cg = rendered.cgImage else { return nil }
+            let image = CIImage(cgImage: cg)
+            textImages.setObject(image, forKey: key as NSString)
+            return image
+        }
+
+        guard var image = picture(color: base, gradient: useGradient) else { return nil }
+        if let progress = word.fill, progress > 0, let filled = picture(color: project.captionHighlightHex, gradient: false) {
+            let width = filled.extent.width * CGFloat(min(1, progress))
+            image = filled.cropped(to: CGRect(x: 0, y: 0, width: width, height: filled.extent.height)).composited(over: image)
+        }
+        // Palavra maior que a tela encolhe em vez de quebrar no meio.
+        if image.extent.width > maxWidth {
+            let shrink = maxWidth / image.extent.width
+            image = image.transformed(by: CGAffineTransform(scaleX: shrink, y: shrink))
+        }
+        return image
+    }
+
+    private func captionBar(hex: String, width: CGFloat, height: CGFloat) -> CIImage? {
+        guard width > 1, height > 1 else { return nil }
+        let w = Int(width), h = Int(height)
+        let key = "bar|\(hex)|\(w)|\(h)"
+        if let cached = textImages.object(forKey: key as NSString) { return cached }
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        format.opaque = false
+        let size = CGSize(width: w, height: h)
+        let picture = UIGraphicsImageRenderer(size: size, format: format).image { _ in
+            FrameRenderer.uiColor(hex: hex).setFill()
+            UIBezierPath(roundedRect: CGRect(origin: .zero, size: size), cornerRadius: min(CGFloat(h) / 3, 18)).fill()
+        }
+        guard let cg = picture.cgImage else { return nil }
+        let image = CIImage(cgImage: cg)
+        textImages.setObject(image, forKey: key as NSString)
+        return image
+    }
+
+    private static func gradientColor(_ hexes: [String], height: CGFloat) -> UIColor? {
+        guard hexes.count >= 2, height > 1 else { return nil }
+        let colors = hexes.map { FrameRenderer.uiColor(hex: $0).cgColor } as CFArray
+        guard let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: nil) else { return nil }
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let image = UIGraphicsImageRenderer(size: CGSize(width: 2, height: height), format: format).image { renderer in
+            renderer.cgContext.drawLinearGradient(gradient, start: .zero, end: CGPoint(x: 0, y: height), options: [])
+        }
+        return UIColor(patternImage: image)
+    }
+}
+
+/// Fontes das legendas, guardadas dentro do app. Funcionam sem internet.
+enum CaptionFonts {
+    static let register: Void = {
+        guard let folder = Bundle.main.resourceURL?.appendingPathComponent("Motion/captionfonts"),
+              let files = try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil) else { return }
+        for file in files where file.pathExtension == "ttf" {
+            CTFontManagerRegisterFontsForURL(file as CFURL, .process, nil)
+        }
+    }()
 }
 
 extension CGImagePropertyOrientation {

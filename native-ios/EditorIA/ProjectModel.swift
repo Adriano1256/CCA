@@ -273,7 +273,7 @@ struct EditorProject: Codable {
     var captionHighlightHex: String = "#FFD84D"
     var captionTextHex: String = "#FFFFFF"
     var captionFontSize: Double = 78
-    var captionFontStyle: String = "heavy"
+    var captionFontStyle: String = "preset"
     /// Altura da legenda (0 = topo, 1 = base). Sem valor, usa a posição segura da proporção.
     var captionVertical: Double?
     /// Falso quando o usuário apaga as legendas; a transcrição continua guardada.
@@ -301,7 +301,7 @@ struct EditorProject: Codable {
         captionHighlightHex = try values.decodeIfPresent(String.self, forKey: .captionHighlightHex) ?? "#FFD84D"
         captionTextHex = try values.decodeIfPresent(String.self, forKey: .captionTextHex) ?? "#FFFFFF"
         captionFontSize = try values.decodeIfPresent(Double.self, forKey: .captionFontSize) ?? 78
-        captionFontStyle = try values.decodeIfPresent(String.self, forKey: .captionFontStyle) ?? "heavy"
+        captionFontStyle = try values.decodeIfPresent(String.self, forKey: .captionFontStyle) ?? "preset"
         captionVertical = try values.decodeIfPresent(Double.self, forKey: .captionVertical)
         captionsEnabled = try values.decodeIfPresent(Bool.self, forKey: .captionsEnabled) ?? true
         name = try values.decodeIfPresent(String.self, forKey: .name) ?? "Projeto sem título"

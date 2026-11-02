@@ -28,6 +28,9 @@ let cases: [Case] = [
     Case(request: "Coloca um zoom lento no clipe \(brollNumber)") { _, o in let c = o.project.clips.first { $0.label == "obra" }; return (c?.look.kenBurns ?? false) || !(c?.keyframes.isEmpty ?? true) },
     Case(request: "Coloca uma tarja de nome da Maria Souza, moradora, em 10 segundos") { p, o in o.requests.contains { if case .motion(let t, _, _, _) = $0 { return t.contains("tarja") }; return false } || o.project.overlays.contains { $0.text.contains("Maria") } },
     Case(request: "Monta o vídeo institucional") { p, _ in p.actions.contains { $0.tool == "assemble" } },
+    Case(request: "Coloca legenda estilo MrBeast") { _, o in o.project.captionStyle == "mrbeast" },
+    Case(request: "Quero uma legenda neon") { _, o in o.project.captionStyle.hasPrefix("neon") },
+    Case(request: "Faz um texto animado estilo katana escrito Asfalto novo") { _, o in o.requests.contains { if case .motion(let t, let x, _, _) = $0 { return t == "katana" && x.lowercased().contains("asfalto") }; return false } },
     Case(request: "Faz essa imagem voar pela lua em 3D com raios laser") { p, o in p.actions.isEmpty || !o.blocked.isEmpty },
     Case(request: "Quanto tempo tem o vídeo?") { p, _ in p.actions.isEmpty && p.reply.contains("6") }
 ]

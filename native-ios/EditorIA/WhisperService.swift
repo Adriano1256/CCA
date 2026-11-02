@@ -10,6 +10,7 @@ enum WhisperService {
         var id: String
         var name: String
         var detail: String
+        var bytes: Int64 { id.hasPrefix("large") ? 626_000_000 : 216_000_000 }
     }
 
     static let options = [

@@ -2,6 +2,7 @@
 import Foundation
 import AVFoundation
 import UIKit
+import CoreImage
 
 /// Teste automático rodado na nuvem, no simulador, com arquivos reais. Não existe na versão instalada.
 @MainActor
@@ -182,14 +183,8 @@ enum SmokeTest {
                 store.saveProject()
             }
             record("Legenda nasce da transcrição", !store.project.captionWords.isEmpty, "\(store.project.captionWords.count) palavras")
-            for style in CaptionAnimator.styles {
-                var captioned = store.project
-                captioned.captionStyle = style.id
-                let captionURL = try await renderer.export(project: captioned, baseDirectory: store.baseDirectoryURL, width: 720, height: 1280)
-                let picture = try await frame(of: captionURL, at: 1.4)
-                try UIImage(cgImage: picture).pngData()?.write(to: folder.appendingPathComponent("legenda-\(style.id).png"))
-            }
-            record("Legendas animadas exportadas", true, "\(CaptionAnimator.styles.count) estilos")
+            try saveCaptionSamples(store: store, folder: folder, base: base)
+            record("Legendas animadas desenhadas", true, "\(CaptionPreset.all.count) estilos")
             let draft = LocalDirectorService.makePlan(command: "monte um institucional", project: store.project).timelineDraft
             record("Diretor monta rascunho", draft != nil, "\(draft?.segments.count ?? 0) trechos")
         } catch {
@@ -200,6 +195,33 @@ enum SmokeTest {
         encoder.outputFormatting = [.prettyPrinted]
         if let data = try? encoder.encode(checks) {
             try? data.write(to: folder.appendingPathComponent("report.json"), options: .atomic)
+        }
+    }
+
+    /// Desenha cada estilo de legenda em cima de uma foto, para conferir o visual.
+    private static func saveCaptionSamples(store: ProjectStore, folder: URL, base: URL) throws {
+        let photo = LocalMedia(name: "foto.png", relativePath: "Media/foto.png", kind: "Imagem", byteCount: 1, importOrder: 1, duration: 5)
+        var project = EditorProject()
+        project.media = [photo]
+        project.clips = [TimelineClip(mediaID: photo.id, track: "video", start: 0, duration: 5, label: "foto")]
+        let renderer = FrameRenderer()
+        let width = 540, height = 960
+        let target = folder.appendingPathComponent("legendas", isDirectory: true)
+        try FileManager.default.createDirectory(at: target, withIntermediateDirectories: true)
+        let sample = ["Agora", "a", "nossa", "rua", "tem", "asfalto", "novo", "em", "2026"]
+        project.captionWords = sample.enumerated().map { CaptionWord(text: $0.element, start: 0.2 + Double($0.offset) * 0.4, duration: 0.36) }
+        project.captionFontSize = 78
+        for preset in CaptionPreset.all {
+            preset.apply(to: &project)
+            let scene = CompositionScene(project: project, renderSize: CGSize(width: width, height: height), baseDirectory: base, trackForClip: [:], orientationForClip: [:])
+            var buffer: CVPixelBuffer?
+            CVPixelBufferCreate(nil, width, height, kCVPixelFormatType_32BGRA, [kCVPixelBufferIOSurfacePropertiesKey as String: [:]] as CFDictionary, &buffer)
+            guard let buffer else { continue }
+            renderer.render(scene: scene, time: 2.45, into: buffer, source: { _ in nil })
+            let image = CIImage(cvPixelBuffer: buffer)
+            if let cg = CIContext().createCGImage(image, from: image.extent) {
+                try UIImage(cgImage: cg).jpegData(compressionQuality: 0.7)?.write(to: target.appendingPathComponent("\(preset.id).jpg"))
+            }
         }
     }
 
