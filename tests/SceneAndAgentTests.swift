@@ -14,8 +14,8 @@ enum SceneAndAgentTests {
         openingCutsAlignToBeats(); karaokePhrases(); lutParses(); lutRejectsBadFile(); chromaRemovesGreen()
         grammarHasAllTools(); promptFormats(); parsesPlanWithNoise(); agentNeverCutsSpeech(); agentEdits()
         agentGroupsByTrack(); agentReportsUnknownTool(); agentDoesNotChangeOriginal(); summaryHasNoPaths(); oldClipDecodes()
-        openingFollowsBeats(); modelRecommendation(); motionImportRewrite()
-        print("SceneAndAgent: 31 checks passed")
+        openingFollowsBeats(); modelRecommendation(); motionImportRewrite(); exportOptions()
+        print("SceneAndAgent: 32 checks passed")
     }
 
     static func keyframesInterpolate() {
@@ -304,5 +304,32 @@ enum SceneAndAgentTests {
         precondition(MotionImport.isComposition("<div data-composition-id=\"a\" data-duration=\"3\">"), "Reconhece composição")
         precondition(MotionImport.duration(in: "<div data-composition-id=\"a\" data-duration=\"3.5\">") == 3.5, "Lê duração")
         precondition(!MotionImport.isComposition("<p>oi</p>"), "HTML comum não vale")
+    }
+
+    static func exportOptions() {
+        var options = ExportOptions()
+        precondition(options.quality == .maximum, "A máxima é o padrão")
+        precondition(options.bitrate(width: 1920, height: 1080, framesPerSecond: 30) == 31_104_000, "1080p30 máxima")
+        options.quality = .good
+        let low = options.bitrate(width: 1920, height: 1080, framesPerSecond: 30)
+        options.quality = .high
+        precondition(low < options.bitrate(width: 1920, height: 1080, framesPerSecond: 30), "Qualidade maior, mais dados")
+        options.quality = .maximum
+        options.codec = .hevc
+        precondition(options.bitrate(width: 1920, height: 1080, framesPerSecond: 30) == 23_328_000, "HEVC usa menos dados")
+        options.codec = .h264
+        options.shortSide = 2160
+        let vertical = options.dimensions(baseWidth: 1080, baseHeight: 1920)
+        precondition(vertical.width == 2160 && vertical.height == 3840, "4K vertical")
+        options.shortSide = 1080
+        let feed = options.dimensions(baseWidth: 1080, baseHeight: 1350)
+        precondition(feed.width == 1080 && feed.height == 1350, "4:5")
+        options.shortSide = 720
+        let wide = options.dimensions(baseWidth: 1920, baseHeight: 1080)
+        precondition(wide.width == 1280 && wide.height == 720, "720p")
+        precondition(options.dimensions(baseWidth: 1080, baseHeight: 1350).height % 2 == 0, "Sempre par")
+        options.frameRate = 25
+        precondition(options.timing(forNominalRates: [60]) == FrameTiming(value: 1, timescale: 25), "Escolha manual vence")
+        precondition(ExportOptions().estimatedBytes(width: 1920, height: 1080, framesPerSecond: 30, duration: 60) > 200_000_000, "Estimativa")
     }
 }

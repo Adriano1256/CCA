@@ -56,7 +56,10 @@ struct ContentView: View {
     @State private var exportedStories: [URL] = []
     @State private var exportError: String?
     @State private var exportAspect = "16:9"
-    @State private var export4K = false
+    @AppStorage("export.quality") private var exportQuality = ExportOptions.Quality.maximum.rawValue
+    @AppStorage("export.codec") private var exportCodec = ExportOptions.Codec.h264.rawValue
+    @AppStorage("export.shortSide") private var exportShortSide = 1080
+    @AppStorage("export.frameRate") private var exportFrameRate = 0
     @State private var photoSelection: [PhotosPickerItem] = []
     @State private var motionOpacity = 1.0
     @State private var motionScale = 1.0
@@ -274,7 +277,27 @@ struct ContentView: View {
                 Text("4:5 · Feed").tag("4:5")
                 Text("1:1 · Quadrado").tag("1:1")
             }
-            Toggle("Resolução 4K", isOn: $export4K)
+            Picker("Qualidade", selection: $exportQuality) {
+                ForEach(ExportOptions.Quality.allCases, id: \.rawValue) { Text("Qualidade \($0.rawValue)").tag($0.rawValue) }
+            }
+            Menu("Resolução: \(resolutionName(exportShortSide))") {
+                Picker("Resolução", selection: $exportShortSide) {
+                    ForEach([720, 1080, 1440, 2160], id: \.self) { Text(resolutionName($0)).tag($0) }
+                }
+            }
+            Menu("Formato: \(exportCodec)") {
+                Picker("Formato", selection: $exportCodec) {
+                    Text("H.264 (funciona em tudo)").tag(ExportOptions.Codec.h264.rawValue)
+                    Text("HEVC (arquivo menor)").tag(ExportOptions.Codec.hevc.rawValue)
+                }
+            }
+            Menu("Quadros: \(exportFrameRate == 0 ? "igual ao material" : "\(exportFrameRate) fps")") {
+                Picker("Quadros por segundo", selection: $exportFrameRate) {
+                    Text("Igual ao material").tag(0)
+                    ForEach([24, 25, 30, 50, 60], id: \.self) { Text("\($0) fps").tag($0) }
+                }
+            }
+            Text(estimateText)
             Divider()
             Button { startExport() } label: { Label("Exportar vídeo", systemImage: "film") }
                 .disabled(renderer.isExporting || store.project.clips.isEmpty)
@@ -442,7 +465,7 @@ struct ContentView: View {
         Task {
             do {
                 let size = exportDimensions
-                exportedURL = try await renderer.export(project: store.project, baseDirectory: store.baseDirectoryURL, width: size.width, height: size.height)
+                exportedURL = try await renderer.export(project: store.project, baseDirectory: store.baseDirectoryURL, width: size.width, height: size.height, options: exportOptions)
                 store.status = renderer.status
             } catch {
                 exportError = error.localizedDescription
@@ -456,8 +479,8 @@ struct ContentView: View {
         agent.unload()
         Task {
             do {
-                let size = export4K ? (width: 2160, height: 3840) : (width: 1080, height: 1920)
-                exportedStories = try await renderer.exportStories(project: store.project, baseDirectory: store.baseDirectoryURL, width: size.width, height: size.height)
+                let size = exportOptions.dimensions(baseWidth: 1080, baseHeight: 1920)
+                exportedStories = try await renderer.exportStories(project: store.project, baseDirectory: store.baseDirectoryURL, width: size.width, height: size.height, options: exportOptions)
                 store.status = renderer.status
             } catch {
                 exportError = error.localizedDescription
@@ -519,9 +542,33 @@ struct ContentView: View {
         }
     }
 
+    private var exportOptions: ExportOptions {
+        ExportOptions(
+            quality: ExportOptions.Quality(rawValue: exportQuality) ?? .maximum,
+            codec: ExportOptions.Codec(rawValue: exportCodec) ?? .h264,
+            shortSide: exportShortSide,
+            frameRate: exportFrameRate == 0 ? nil : exportFrameRate
+        )
+    }
+
     private var exportDimensions: (width: Int, height: Int) {
-        let base = baseDimensions
-        return export4K ? (base.width * 2, base.height * 2) : base
+        exportOptions.dimensions(baseWidth: baseDimensions.width, baseHeight: baseDimensions.height)
+    }
+
+    private func resolutionName(_ side: Int) -> String {
+        switch side {
+        case 720: return "HD 720p"
+        case 1440: return "2K 1440p"
+        case 2160: return "4K 2160p"
+        default: return "Full HD 1080p"
+        }
+    }
+
+    /// Tamanho aproximado do arquivo final, com a escolha atual.
+    private var estimateText: String {
+        let size = exportDimensions
+        let bytes = exportOptions.estimatedBytes(width: size.width, height: size.height, framesPerSecond: Double(exportFrameRate == 0 ? 30 : exportFrameRate), duration: store.project.contentEnd)
+        return "Arquivo de aproximadamente \(ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file))"
     }
 
     @ViewBuilder

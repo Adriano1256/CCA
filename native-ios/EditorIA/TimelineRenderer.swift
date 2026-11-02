@@ -28,6 +28,7 @@ struct BuiltTimeline {
     let audioMix: AVMutableAudioMix?
     let renderSize: CGSize
     let duration: Double
+    var framesPerSecond: Double = 30
     let frameRateWarning: String?
 }
 
@@ -87,7 +88,7 @@ enum TimelineCompositionBuilder {
         CMTime(seconds: seconds, preferredTimescale: 60000)
     }
 
-    static func build(project: EditorProject, baseDirectory: URL, width: Int, height: Int) async throws -> BuiltTimeline {
+    static func build(project: EditorProject, baseDirectory: URL, width: Int, height: Int, frameRate: Int? = nil) async throws -> BuiltTimeline {
         let composition = AVMutableComposition()
         let renderSize = CGSize(width: width, height: height)
         var visualClips: [TimelineClip] = []
@@ -195,7 +196,7 @@ enum TimelineCompositionBuilder {
         try blankTrack.insertTimeRange(blankRange, of: blankSource, at: .zero)
         blankTrack.scaleTimeRange(blankRange, toDuration: time(maxEnd))
 
-        let timing = FrameRatePlanner.timing(forNominalRates: nominalRates)
+        let timing = frameRate.map { FrameTiming(value: 1, timescale: Int32($0)) } ?? FrameRatePlanner.timing(forNominalRates: nominalRates)
         let videoComposition = AVMutableVideoComposition()
         videoComposition.customVideoCompositorClass = TimelineCompositor.self
         videoComposition.renderSize = renderSize
@@ -235,6 +236,7 @@ enum TimelineCompositionBuilder {
             audioMix: audioMix,
             renderSize: renderSize,
             duration: maxEnd,
+            framesPerSecond: timing.framesPerSecond,
             frameRateWarning: FrameRatePlanner.mismatchWarning(forNominalRates: nominalRates)
         )
     }
@@ -348,17 +350,29 @@ enum TimelineCompositionBuilder {
 
 }
 
+/// Sinaliza o cancelamento entre as filas de gravação.
+private final class ExportControl: @unchecked Sendable {
+    private let lock = NSLock()
+    private var cancelledValue = false
+    var cancelled: Bool {
+        get { lock.lock(); defer { lock.unlock() }; return cancelledValue }
+        set { lock.lock(); cancelledValue = newValue; lock.unlock() }
+    }
+}
+
 @MainActor
 final class TimelineRenderer: ObservableObject {
     @Published private(set) var isExporting = false
     @Published private(set) var progress: Float = 0
     @Published private(set) var status = "Pronto para exportar"
 
+    private var control = ExportControl()
+    private var activeReader: AVAssetReader?
     private var activeSession: AVAssetExportSession?
-    private var cancelRequested = false
 
     func cancel() {
-        cancelRequested = true
+        control.cancelled = true
+        activeReader?.cancelReading()
         activeSession?.cancelExport()
         status = "Cancelando exportação…"
     }
@@ -366,7 +380,7 @@ final class TimelineRenderer: ObservableObject {
     private func beginExport() throws {
         guard !isExporting else { throw RenderError.exportFailed("Já existe uma exportação em andamento.") }
         isExporting = true
-        cancelRequested = false
+        control = ExportControl()
         progress = 0
         status = "Preparando composição local"
         // A exportação usa a GPU e para se a tela apagar.
@@ -375,33 +389,30 @@ final class TimelineRenderer: ObservableObject {
 
     private func endExport() {
         isExporting = false
+        activeReader = nil
         activeSession = nil
         UIApplication.shared.isIdleTimerDisabled = false
     }
 
-    func export(project: EditorProject, baseDirectory: URL, width: Int = 1920, height: Int = 1080) async throws -> URL {
+    func export(project: EditorProject, baseDirectory: URL, width: Int = 1920, height: Int = 1080, options: ExportOptions = .maximum) async throws -> URL {
         try beginExport()
         defer { endExport() }
 
-        let built = try await TimelineCompositionBuilder.build(project: project, baseDirectory: baseDirectory, width: width, height: height)
-        guard let videoComposition = built.videoComposition else {
+        let built = try await TimelineCompositionBuilder.build(project: project, baseDirectory: baseDirectory, width: width, height: height, frameRate: options.frameRate)
+        guard built.videoComposition != nil else {
             guard let session = AVAssetExportSession(asset: built.composition, presetName: AVAssetExportPresetAppleM4A) else { throw RenderError.cannotCreateExportSession }
             session.audioMix = built.audioMix
             let destination = try outputURL(fileName: "\(safeName(project.name))-\(Int(Date().timeIntervalSince1970)).m4a")
-            return try await run(session: session, to: destination, fileType: .m4a, progressBase: 0, progressSpan: 1)
+            return try await runAudioOnly(session: session, to: destination)
         }
-
-        guard let session = AVAssetExportSession(asset: built.composition, presetName: AVAssetExportPresetHighestQuality) else { throw RenderError.cannotCreateExportSession }
-        session.videoComposition = videoComposition
-        session.audioMix = built.audioMix
         let destination = try outputURL(fileName: "\(safeName(project.name))-\(Int(Date().timeIntervalSince1970)).mp4")
-        let result = try await run(session: session, to: destination, fileType: .mp4, progressBase: 0, progressSpan: 1)
+        try await write(built: built, to: destination, options: options, timeRange: nil, progressBase: 0, progressSpan: 1)
         status = built.frameRateWarning ?? "Vídeo exportado localmente"
-        return result
+        return destination
     }
 
     /// Exporta um arquivo por clipe da trilha principal: STORY_001.mp4, STORY_002.mp4…
-    func exportStories(project: EditorProject, baseDirectory: URL, width: Int = 1080, height: Int = 1920) async throws -> [URL] {
+    func exportStories(project: EditorProject, baseDirectory: URL, width: Int = 1080, height: Int = 1920, options: ExportOptions = .maximum) async throws -> [URL] {
         try beginExport()
         defer { endExport() }
 
@@ -410,49 +421,180 @@ final class TimelineRenderer: ObservableObject {
         let folder = "Stories-\(safeName(project.name))-\(Int(Date().timeIntervalSince1970))"
         var results: [URL] = []
         for range in ranges {
-            if cancelRequested { throw RenderError.exportFailed("Exportação cancelada.") }
+            if control.cancelled { throw RenderError.exportFailed("Exportação cancelada.") }
             let span = 1 / Float(ranges.count)
             status = "Exportando \(range.fileName)"
-            // A ferramenta de animação não pode ser reutilizada: cada arquivo tem sua composição.
-            let built = try await TimelineCompositionBuilder.build(project: project, baseDirectory: baseDirectory, width: width, height: height)
-            guard let videoComposition = built.videoComposition else { throw RenderError.noRenderableMedia }
-                guard let session = AVAssetExportSession(asset: built.composition, presetName: AVAssetExportPresetHighestQuality) else { throw RenderError.cannotCreateExportSession }
-            session.videoComposition = videoComposition
-            session.audioMix = built.audioMix
-            session.timeRange = CMTimeRange(start: CMTime(seconds: range.start, preferredTimescale: 60000), duration: CMTime(seconds: range.duration, preferredTimescale: 60000))
+            let built = try await TimelineCompositionBuilder.build(project: project, baseDirectory: baseDirectory, width: width, height: height, frameRate: options.frameRate)
             let destination = try outputURL(fileName: "\(folder)/\(range.fileName)")
-            results.append(try await run(session: session, to: destination, fileType: .mp4, progressBase: Float(range.index - 1) * span, progressSpan: span))
+            let timeRange = CMTimeRange(start: CMTime(seconds: range.start, preferredTimescale: 60000), duration: CMTime(seconds: range.duration, preferredTimescale: 60000))
+            try await write(built: built, to: destination, options: options, timeRange: timeRange, progressBase: Float(range.index - 1) * span, progressSpan: span)
+            results.append(destination)
         }
         status = "\(results.count) Stories exportados localmente"
         return results
     }
 
-    private func run(session: AVAssetExportSession, to destination: URL, fileType: AVFileType, progressBase: Float, progressSpan: Float) async throws -> URL {
-        session.outputURL = destination
-        session.outputFileType = fileType
-        session.shouldOptimizeForNetworkUse = false
-        activeSession = session
-        status = "Renderizando no dispositivo"
-        let monitor = Task { @MainActor [weak self] in
-            while !Task.isCancelled {
-                self?.progress = progressBase + session.progress * progressSpan
-                try? await Task.sleep(for: .milliseconds(150))
+    /// Grava com codec e bitrate escolhidos, em vez de deixar o sistema decidir a qualidade.
+    private func write(built: BuiltTimeline, to destination: URL, options: ExportOptions, timeRange: CMTimeRange?, progressBase: Float, progressSpan: Float) async throws {
+        guard let videoComposition = built.videoComposition else { throw RenderError.noRenderableMedia }
+        let composition = built.composition
+        let reader = try AVAssetReader(asset: composition)
+        if let timeRange { reader.timeRange = timeRange }
+
+        let videoTracks = composition.tracks(withMediaType: .video)
+        let videoOutput = AVAssetReaderVideoCompositionOutput(videoTracks: videoTracks, videoSettings: [
+            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA
+        ])
+        videoOutput.videoComposition = videoComposition
+        videoOutput.alwaysCopiesSampleData = false
+        guard reader.canAdd(videoOutput) else { throw RenderError.cannotCreateExportSession }
+        reader.add(videoOutput)
+
+        let audioTracks = composition.tracks(withMediaType: .audio)
+        var audioOutput: AVAssetReaderAudioMixOutput?
+        if !audioTracks.isEmpty {
+            let output = AVAssetReaderAudioMixOutput(audioTracks: audioTracks, audioSettings: [
+                AVFormatIDKey: kAudioFormatLinearPCM,
+                AVSampleRateKey: 48_000,
+                AVNumberOfChannelsKey: 2,
+                AVLinearPCMBitDepthKey: 16,
+                AVLinearPCMIsFloatKey: false,
+                AVLinearPCMIsBigEndianKey: false,
+                AVLinearPCMIsNonInterleaved: false
+            ])
+            output.audioMix = built.audioMix
+            output.alwaysCopiesSampleData = false
+            if reader.canAdd(output) {
+                reader.add(output)
+                audioOutput = output
             }
         }
+
+        let writer = try AVAssetWriter(outputURL: destination, fileType: .mp4)
+        let width = Int(built.renderSize.width), height = Int(built.renderSize.height)
+        let bitrate = options.bitrate(width: width, height: height, framesPerSecond: built.framesPerSecond)
+        var compression: [String: Any] = [
+            AVVideoAverageBitRateKey: bitrate,
+            AVVideoExpectedSourceFrameRateKey: built.framesPerSecond,
+            AVVideoMaxKeyFrameIntervalKey: max(1, Int(built.framesPerSecond))
+        ]
+        if options.codec == .h264 { compression[AVVideoProfileLevelKey] = AVVideoProfileLevelH264HighAutoLevel }
+        let videoInput = AVAssetWriterInput(mediaType: .video, outputSettings: [
+            AVVideoCodecKey: options.codec == .hevc ? AVVideoCodecType.hevc : AVVideoCodecType.h264,
+            AVVideoWidthKey: width,
+            AVVideoHeightKey: height,
+            AVVideoCompressionPropertiesKey: compression,
+            AVVideoColorPropertiesKey: [
+                AVVideoColorPrimariesKey: AVVideoColorPrimaries_ITU_R_709_2,
+                AVVideoTransferFunctionKey: AVVideoTransferFunction_ITU_R_709_2,
+                AVVideoYCbCrMatrixKey: AVVideoYCbCrMatrix_ITU_R_709_2
+            ]
+        ])
+        videoInput.expectsMediaDataInRealTime = false
+        guard writer.canAdd(videoInput) else { throw RenderError.exportFailed("O aparelho não aceita este codec nesta resolução.") }
+        writer.add(videoInput)
+
+        var audioInput: AVAssetWriterInput?
+        if audioOutput != nil {
+            let input = AVAssetWriterInput(mediaType: .audio, outputSettings: [
+                AVFormatIDKey: kAudioFormatMPEG4AAC,
+                AVSampleRateKey: 48_000,
+                AVNumberOfChannelsKey: 2,
+                AVEncoderBitRateKey: options.audioBitrate
+            ])
+            input.expectsMediaDataInRealTime = false
+            if writer.canAdd(input) {
+                writer.add(input)
+                audioInput = input
+            }
+        }
+
+        guard reader.startReading() else { throw reader.error ?? RenderError.cannotCreateExportSession }
+        guard writer.startWriting() else {
+            reader.cancelReading()
+            throw writer.error ?? RenderError.cannotCreateExportSession
+        }
+        let start = timeRange?.start ?? .zero
+        writer.startSession(atSourceTime: start)
+        activeReader = reader
+        status = "Renderizando no dispositivo"
+
+        let total = max(0.01, timeRange?.duration.seconds ?? built.duration)
+        let startSeconds = start.seconds
+        let control = self.control
+        let report: @Sendable (Double) -> Void = { [weak self] seconds in
+            let fraction = Float(min(1, max(0, (seconds - startSeconds) / total)))
+            Task { @MainActor in self?.progress = progressBase + fraction * progressSpan }
+        }
+
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask { await Self.pump(input: videoInput, output: videoOutput, label: "video", control: control, report: report) }
+            if let audioInput, let audioOutput {
+                group.addTask { await Self.pump(input: audioInput, output: audioOutput, label: "audio", control: control, report: nil) }
+            }
+        }
+
+        if control.cancelled {
+            reader.cancelReading()
+            writer.cancelWriting()
+            try? FileManager.default.removeItem(at: destination)
+            status = "Exportação cancelada"
+            throw RenderError.exportFailed("Exportação cancelada.")
+        }
+        guard reader.status != .failed else {
+            writer.cancelWriting()
+            try? FileManager.default.removeItem(at: destination)
+            throw RenderError.exportFailed(reader.error?.localizedDescription ?? "Falha na leitura do vídeo")
+        }
+        await writer.finishWriting()
+        guard writer.status == .completed else {
+            try? FileManager.default.removeItem(at: destination)
+            throw RenderError.exportFailed(writer.error?.localizedDescription ?? "Falha na gravação do arquivo")
+        }
+        progress = progressBase + progressSpan
+    }
+
+    /// Passa as amostras do leitor para o gravador, no ritmo que o gravador aguenta.
+    nonisolated private static func pump(input: AVAssetWriterInput, output: AVAssetReaderOutput, label: String, control: ExportControl, report: (@Sendable (Double) -> Void)?) async {
+        let queue = DispatchQueue(label: "editoria.export.\(label)")
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            var finished = false
+            input.requestMediaDataWhenReady(on: queue) {
+                guard !finished else { return }
+                while input.isReadyForMoreMediaData {
+                    if !control.cancelled, let sample = output.copyNextSampleBuffer() {
+                        report?(CMSampleBufferGetPresentationTimeStamp(sample).seconds)
+                        if !input.append(sample) {
+                            finished = true
+                            input.markAsFinished()
+                            continuation.resume()
+                            return
+                        }
+                    } else {
+                        finished = true
+                        input.markAsFinished()
+                        continuation.resume()
+                        return
+                    }
+                }
+            }
+        }
+    }
+
+    private func runAudioOnly(session: AVAssetExportSession, to destination: URL) async throws -> URL {
+        session.outputURL = destination
+        session.outputFileType = .m4a
+        activeSession = session
+        status = "Renderizando áudio no dispositivo"
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             session.exportAsynchronously { continuation.resume() }
         }
-        monitor.cancel()
-        progress = progressBase + progressSpan
         guard session.status == .completed else {
             try? FileManager.default.removeItem(at: destination)
-            if session.status == .cancelled {
-                status = "Exportação cancelada"
-                throw RenderError.exportFailed("Exportação cancelada.")
-            }
-            throw RenderError.exportFailed(session.error?.localizedDescription ?? "Erro desconhecido")
+            throw RenderError.exportFailed(session.error?.localizedDescription ?? "Falha ao gravar o áudio")
         }
-        status = "Exportado localmente"
+        progress = 1
+        status = "Áudio exportado localmente"
         return destination
     }
 

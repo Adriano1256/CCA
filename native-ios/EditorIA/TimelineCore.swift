@@ -434,3 +434,59 @@ enum CubeLUT {
         (-0.169 * r - 0.331 * g + 0.5 * b, 0.5 * r - 0.419 * g - 0.081 * b)
     }
 }
+
+/// O que o usuário escolhe ao exportar.
+struct ExportOptions: Equatable {
+    enum Quality: String, CaseIterable {
+        case good = "Boa"
+        case high = "Alta"
+        case maximum = "Máxima"
+
+        var bitsPerPixel: Double {
+            switch self {
+            case .good: return 0.12
+            case .high: return 0.25
+            case .maximum: return 0.5
+            }
+        }
+    }
+
+    enum Codec: String, CaseIterable {
+        case h264 = "H.264"
+        case hevc = "HEVC"
+    }
+
+    var quality: Quality = .maximum
+    var codec: Codec = .h264
+    /// Lado menor do vídeo: 720, 1080, 1440 ou 2160.
+    var shortSide: Int = 1080
+    /// Nil segue o material.
+    var frameRate: Int?
+
+    static let maximum = ExportOptions()
+
+    /// HEVC comprime melhor, então chega à mesma imagem com menos dados.
+    func bitrate(width: Int, height: Int, framesPerSecond: Double) -> Int {
+        let factor = codec == .hevc ? 0.75 : 1
+        let value = Double(width) * Double(height) * framesPerSecond * quality.bitsPerPixel * factor
+        return Int(min(240_000_000, max(2_000_000, value)))
+    }
+
+    var audioBitrate: Int { quality == .good ? 192_000 : 320_000 }
+
+    /// Tamanho final, mantendo a proporção. Sempre em números pares, como os codecs exigem.
+    func dimensions(baseWidth: Int, baseHeight: Int) -> (width: Int, height: Int) {
+        let scale = Double(shortSide) / Double(max(1, min(baseWidth, baseHeight)))
+        func even(_ value: Double) -> Int { Int((value / 2).rounded()) * 2 }
+        return (even(Double(baseWidth) * scale), even(Double(baseHeight) * scale))
+    }
+
+    func estimatedBytes(width: Int, height: Int, framesPerSecond: Double, duration: Double) -> Int64 {
+        Int64(Double(bitrate(width: width, height: height, framesPerSecond: framesPerSecond) + audioBitrate) * duration / 8)
+    }
+
+    func timing(forNominalRates rates: [Double]) -> FrameTiming {
+        if let frameRate { return FrameTiming(value: 1, timescale: Int32(frameRate)) }
+        return FrameRatePlanner.timing(forNominalRates: rates)
+    }
+}

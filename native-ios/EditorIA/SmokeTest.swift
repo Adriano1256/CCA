@@ -100,6 +100,25 @@ enum SmokeTest {
             let gray = try await sampled(6.5, tag: "saturacao", url: bw)
             record("Saturação zero deixa cinza", abs(gray.r - gray.g) < 25 && abs(gray.g - gray.b) < 25, "\(gray)")
 
+            // Qualidade escolhida: máxima precisa gerar arquivo bem maior que boa.
+            var lowOptions = ExportOptions(); lowOptions.quality = .good
+            let lowURL = try await renderer.export(project: project, baseDirectory: base, width: 1280, height: 720, options: lowOptions)
+            let highURL = try await renderer.export(project: project, baseDirectory: base, width: 1280, height: 720, options: .maximum)
+            let lowTracks = try await AVURLAsset(url: lowURL).loadTracks(withMediaType: .video)
+            let highTracks = try await AVURLAsset(url: highURL).loadTracks(withMediaType: .video)
+            let lowRate = try await lowTracks.first?.load(.estimatedDataRate) ?? 0
+            let highRate = try await highTracks.first?.load(.estimatedDataRate) ?? 0
+            record("Qualidade máxima usa mais dados", highRate >= lowRate, "\(lowRate) e \(highRate) bps")
+            var hevcOptions = ExportOptions(); hevcOptions.codec = .hevc
+            let hevcURL = try await renderer.export(project: project, baseDirectory: base, width: 1280, height: 720, options: hevcOptions)
+            let hevcFrame = try await sampled(0.2, tag: "hevc", url: hevcURL)
+            record("Exporta em HEVC", hevcFrame.b > 200, "\(hevcFrame)")
+            var fixedRate = ExportOptions(); fixedRate.frameRate = 24
+            let fixedURL = try await renderer.export(project: project, baseDirectory: base, width: 640, height: 360, options: fixedRate)
+            let fixedTracks = try await AVURLAsset(url: fixedURL).loadTracks(withMediaType: .video)
+            let fixedValue = try await fixedTracks.first?.load(.nominalFrameRate) ?? 0
+            record("Frame rate escolhido é respeitado", abs(fixedValue - 24) < 1, "\(fixedValue) fps")
+
             // Velocidade: 2x dura metade.
             var fast = project
             fast.overlays = []
