@@ -8,6 +8,11 @@ on:
 permissions:
   contents: write
 
+# Um Mac de cada vez: os dois testes juntos ficavam sem computador na fila.
+concurrency:
+  group: mac
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: macos-15

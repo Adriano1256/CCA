@@ -1,0 +1,31 @@
+name: Repetir se faltou computador na nuvem
+
+# O GitHub às vezes não encontra um Mac livre e cancela depois de 15 minutos na fila.
+# Quando isso acontece, tenta de novo sozinho. Erro de compilação não é repetido.
+on:
+  workflow_run:
+    workflows: ["Gerar app para iPhone", "Testar a IA local"]
+    types: [completed]
+
+permissions:
+  actions: write
+  checks: read
+
+jobs:
+  repetir:
+    if: github.event.workflow_run.conclusion != 'success' && github.event.workflow_run.run_attempt < 6
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          RUN: ${{ github.event.workflow_run.id }}
+          REPO: ${{ github.repository }}
+        run: |
+          for JOB in $(gh api "repos/$REPO/actions/runs/$RUN/jobs" --jq '.jobs[].id'); do
+            if gh api "repos/$REPO/check-runs/$JOB/annotations" --jq '.[].message' | grep -q 'not acquired by Runner'; then
+              sleep 120
+              gh run rerun "$RUN" --repo "$REPO"
+              exit 0
+            fi
+          done
+          echo "Não foi falta de computador."
