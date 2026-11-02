@@ -45,7 +45,7 @@ jobs:
             NAME=${spec%%|*}; REST=${spec#*|}; FORMAT=${REST%%|*}; URL=${REST#*|}
             curl -sSL -o model.gguf "$URL"
             ls -lh model.gguf
-            (cd tests/aitest && perl -e 'alarm 1500; exec @ARGV' ./.build/release/aitest ../../model.gguf "$FORMAT" 3) 2>"../../ai-report/$NAME-erros.txt" | tee "ai-report/$NAME.txt" || true
+            (cd tests/aitest && perl -e 'alarm 1500; exec @ARGV' ./.build/release/aitest ../../model.gguf "$FORMAT" 3) 2>"ai-report/$NAME-erros.txt" | tee "ai-report/$NAME.txt" || true
             rm -f model.gguf
           done
       - name: Publicar resultado
