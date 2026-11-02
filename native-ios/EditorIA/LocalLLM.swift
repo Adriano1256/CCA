@@ -88,6 +88,30 @@ final class LlamaEngine: @unchecked Sendable {
         return buffer.prefix(Int(written)).map { UInt8(bitPattern: $0) }
     }
 
+    private func allows(_ rules: UnsafeMutablePointer<llama_sampler>, _ token: llama_token) -> Bool {
+        var single = llama_token_data(id: token, logit: 1, p: 0)
+        return withUnsafeMutablePointer(to: &single) { pointer -> Bool in
+            var array = llama_token_data_array(data: pointer, size: 1, selected: -1, sorted: false)
+            llama_sampler_apply(rules, &array)
+            return pointer.pointee.logit.isFinite
+        }
+    }
+
+    /// A palavra mais provável que a gramática permite, olhando o vocabulário todo.
+    private func bestAllowed(_ rules: UnsafeMutablePointer<llama_sampler>) -> llama_token {
+        let count = Int(llama_vocab_n_tokens(vocab))
+        guard let logits = llama_get_logits_ith(context, -1) else { return 0 }
+        var candidates = (0..<count).map { llama_token_data(id: llama_token($0), logit: logits[$0], p: 0) }
+        return candidates.withUnsafeMutableBufferPointer { buffer -> llama_token in
+            var array = llama_token_data_array(data: buffer.baseAddress, size: buffer.count, selected: -1, sorted: false)
+            llama_sampler_apply(rules, &array)
+            guard let data = array.data, array.size > 0 else { return 0 }
+            var best = 0
+            for index in 1..<Int(array.size) where data[index].logit > data[best].logit { best = index }
+            return data[best].id
+        }
+    }
+
     /// Confere se a gramática é aceita pelo vocabulário e devolve o amostrador pronto.
     func makeGrammarSampler(_ grammar: String) throws -> UnsafeMutablePointer<llama_sampler> {
         guard let sampler = llama_sampler_init_grammar(vocab, grammar, "root") else { throw LocalLLMError.grammarFailed }
@@ -100,11 +124,15 @@ final class LlamaEngine: @unchecked Sendable {
         var tokens = try tokenize(prompt)
         guard tokens.count + 32 < contextSize else { throw LocalLLMError.promptTooLong }
 
+        // Sorteia entre as 40 melhores palavras e só confere a gramática na escolhida.
+        // Conferir a gramática no vocabulário inteiro a cada palavra deixava a IA muito lenta.
         let chain = llama_sampler_chain_init(llama_sampler_chain_default_params())
         defer { llama_sampler_free(chain) }
-        if let grammar { llama_sampler_chain_add(chain, try makeGrammarSampler(grammar)) }
+        llama_sampler_chain_add(chain, llama_sampler_init_top_k(40))
         llama_sampler_chain_add(chain, llama_sampler_init_temp(temperature))
         llama_sampler_chain_add(chain, llama_sampler_init_dist(UInt32(truncatingIfNeeded: Date().hashValue)))
+        let rules = try grammar.map { try makeGrammarSampler($0) }
+        defer { if let rules { llama_sampler_free(rules) } }
 
         // O pedido entra em blocos que cabem no tamanho de lote.
         var position = 0
@@ -125,6 +153,10 @@ final class LlamaEngine: @unchecked Sendable {
         while produced < min(maximumTokens, room) {
             if shouldStop() { break }
             var token = llama_sampler_sample(chain, context, -1)
+            if let rules {
+                if !allows(rules, token) { token = bestAllowed(rules) }
+                llama_sampler_accept(rules, token)
+            }
             if llama_vocab_is_eog(vocab, token) { break }
             output.append(contentsOf: bytes(of: token))
             produced += 1

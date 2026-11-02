@@ -35,6 +35,7 @@ let cases: [Case] = [
     Case(request: "Quanto tempo tem o vídeo?") { p, _ in p.actions.isEmpty && p.reply.contains("6") }
 ]
 
+setvbuf(stdout, nil, _IOLBF, 0)
 let path = CommandLine.arguments[1]
 let format: ChatFormat = CommandLine.arguments[2] == "gemma" ? .gemma : .qwen
 let threads = Int32(CommandLine.arguments.count > 3 ? CommandLine.arguments[3] : "3") ?? 3
