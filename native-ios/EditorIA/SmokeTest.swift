@@ -21,8 +21,13 @@ enum SmokeTest {
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         var checks: [Check] = []
 
+        let started = Date()
         func record(_ name: String, _ passed: Bool, _ detail: String = "") {
-            checks.append(Check(name: name, passed: passed, detail: detail))
+            let elapsed = String(format: " [%.0f s]", Date().timeIntervalSince(started))
+            checks.append(Check(name: name, passed: passed, detail: detail + elapsed))
+            print("SMOKE \(passed ? "OK" : "FALHA") \(name): \(detail)\(elapsed)")
+            // Parcial: se algo travar, o que já foi conferido não se perde.
+            if let data = try? JSONEncoder().encode(checks) { try? data.write(to: folder.appendingPathComponent("parcial.json"), options: .atomic) }
         }
 
         do {
@@ -56,7 +61,7 @@ enum SmokeTest {
 
             // Exportação horizontal.
             let renderer = TimelineRenderer()
-            let horizontal = try await renderer.export(project: project, baseDirectory: base, width: 1920, height: 1080)
+            let horizontal = try await limited(renderer, project: project, baseDirectory: base, width: 1920, height: 1080)
             let asset = AVURLAsset(url: horizontal)
             let duration = try await asset.load(.duration).seconds
             record("Exporta MP4 horizontal", abs(duration - project.contentEnd) < 0.3, String(format: "%.2f s, esperado %.2f", duration, project.contentEnd))
@@ -84,38 +89,38 @@ enum SmokeTest {
             record("Dissolve mistura os dois clipes", dissolve.r > 40 && dissolve.b > 40, "\(dissolve)")
 
             // Vertical, com a mesma timeline: o vídeo deitado precisa encher a tela em pé.
-            let vertical = try await renderer.export(project: project, baseDirectory: base, width: 1080, height: 1920)
+            let vertical = try await limited(renderer, project: project, baseDirectory: base, width: 1080, height: 1920)
             let verticalRed = try await sampled(3.5, tag: "v-vermelho", x: 0.5, y: 0.1, url: vertical)
             record("Vertical preenche o quadro", verticalRed.r > 200, "\(verticalRed)")
 
             // Cor e LUT: o LUT preto precisa escurecer o clipe.
             var graded = project
             if let index = graded.clips.firstIndex(where: { $0.id == first.id }) { graded.clips[index].look.lutRelativePath = "preto.cube" }
-            let gradedURL = try await renderer.export(project: graded, baseDirectory: base, width: 1280, height: 720)
+            let gradedURL = try await limited(renderer, project: graded, baseDirectory: base, width: 1280, height: 720)
             let dark = try await sampled(0.2, tag: "lut", url: gradedURL)
             record("LUT .cube é aplicado", dark.b < 40, "\(dark)")
 
             var brighter = project
             if let index = brighter.clips.firstIndex(where: { $0.id == third.id }) { brighter.clips[index].look.saturation = 0 }
-            let bw = try await renderer.export(project: brighter, baseDirectory: base, width: 1280, height: 720)
+            let bw = try await limited(renderer, project: brighter, baseDirectory: base, width: 1280, height: 720)
             let gray = try await sampled(6.5, tag: "saturacao", url: bw)
             record("Saturação zero deixa cinza", abs(gray.r - gray.g) < 25 && abs(gray.g - gray.b) < 25, "\(gray)")
 
             // Qualidade escolhida: máxima precisa gerar arquivo bem maior que boa.
             var lowOptions = ExportOptions(); lowOptions.quality = .good
-            let lowURL = try await renderer.export(project: project, baseDirectory: base, width: 1280, height: 720, options: lowOptions)
-            let highURL = try await renderer.export(project: project, baseDirectory: base, width: 1280, height: 720, options: .maximum)
+            let lowURL = try await limited(renderer, project: project, baseDirectory: base, width: 1280, height: 720, options: lowOptions)
+            let highURL = try await limited(renderer, project: project, baseDirectory: base, width: 1280, height: 720, options: .maximum)
             let lowTracks = try await AVURLAsset(url: lowURL).loadTracks(withMediaType: .video)
             let highTracks = try await AVURLAsset(url: highURL).loadTracks(withMediaType: .video)
             let lowRate = try await lowTracks.first?.load(.estimatedDataRate) ?? 0
             let highRate = try await highTracks.first?.load(.estimatedDataRate) ?? 0
             record("Qualidade máxima usa mais dados", highRate >= lowRate, "\(lowRate) e \(highRate) bps")
             var hevcOptions = ExportOptions(); hevcOptions.codec = .hevc
-            let hevcURL = try await renderer.export(project: project, baseDirectory: base, width: 1280, height: 720, options: hevcOptions)
+            let hevcURL = try await limited(renderer, project: project, baseDirectory: base, width: 1280, height: 720, options: hevcOptions)
             let hevcFrame = try await sampled(0.2, tag: "hevc", url: hevcURL)
             record("Exporta em HEVC", hevcFrame.b > 200, "\(hevcFrame)")
             var fixedRate = ExportOptions(); fixedRate.frameRate = 24
-            let fixedURL = try await renderer.export(project: project, baseDirectory: base, width: 640, height: 360, options: fixedRate)
+            let fixedURL = try await limited(renderer, project: project, baseDirectory: base, width: 640, height: 360, options: fixedRate)
             let fixedTracks = try await AVURLAsset(url: fixedURL).loadTracks(withMediaType: .video)
             let fixedValue = try await fixedTracks.first?.load(.nominalFrameRate) ?? 0
             record("Frame rate escolhido é respeitado", abs(fixedValue - 24) < 1, "\(fixedValue) fps")
@@ -125,12 +130,12 @@ enum SmokeTest {
             fast.overlays = []
             fast.captionWords = []
             fast.clips = [TimelineEditing.setSpeed(TimelineClip(mediaID: blue.id, track: "video", start: 0, duration: 4, label: "x"), to: 2)]
-            let fastURL = try await renderer.export(project: fast, baseDirectory: base, width: 640, height: 360)
+            let fastURL = try await limited(renderer, project: fast, baseDirectory: base, width: 640, height: 360)
             let fastDuration = try await AVURLAsset(url: fastURL).load(.duration).seconds
             record("Velocidade 2x dura metade", abs(fastDuration - 2) < 0.2, String(format: "%.2f s", fastDuration))
 
             // Stories em arquivos separados.
-            let stories = try await renderer.exportStories(project: project, baseDirectory: base, width: 540, height: 960)
+            let stories = try await limitedStories(renderer, project: project, baseDirectory: base, width: 540, height: 960)
             record("Stories geram um arquivo por clipe", stories.count == 3 && stories.first?.lastPathComponent == "STORY_001.mp4", stories.map(\.lastPathComponent).joined(separator: ","))
 
             // Motion: HTML e GSAP viram vídeo dentro do app, com e sem transparência.
@@ -152,7 +157,7 @@ enum SmokeTest {
                     try? FileManager.default.copyItem(at: output, to: base.appendingPathComponent("Media/\(id).mov"))
                     withMotion.media.append(motionMedia)
                     withMotion.clips.append(TimelineClip(mediaID: motionMedia.id, track: "motion", start: 0, duration: 3, volume: 0, label: id))
-                    let mixed = try await renderer.export(project: withMotion, baseDirectory: base, width: 1280, height: 720)
+                    let mixed = try await limited(renderer, project: withMotion, baseDirectory: base, width: 1280, height: 720)
                     let check = try await sampled(2, tag: "mix-\(id)", x: 0.9, y: 0.1, url: mixed)
                     if template.transparent {
                         record("Motion transparente deixa o vídeo aparecer", check.b > 150, "\(check)")
@@ -195,6 +200,46 @@ enum SmokeTest {
         encoder.outputFormatting = [.prettyPrinted]
         if let data = try? encoder.encode(checks) {
             try? data.write(to: folder.appendingPathComponent("report.json"), options: .atomic)
+        }
+    }
+
+    struct Timeout: LocalizedError {
+        var errorDescription: String? { "Exportação passou de 3 minutos e foi interrompida" }
+    }
+
+    /// Exporta com tempo limite, para um travamento aparecer no relatório em vez de parar o teste.
+    private static func limited(_ renderer: TimelineRenderer, project: EditorProject, baseDirectory: URL, width: Int, height: Int, options: ExportOptions = .maximum) async throws -> URL {
+        try await race { try await renderer.export(project: project, baseDirectory: baseDirectory, width: width, height: height, options: options) } onTimeout: { renderer.cancel() }
+    }
+
+    private static func limitedStories(_ renderer: TimelineRenderer, project: EditorProject, baseDirectory: URL, width: Int, height: Int) async throws -> [URL] {
+        try await race { try await renderer.exportStories(project: project, baseDirectory: baseDirectory, width: width, height: height) } onTimeout: { renderer.cancel() }
+    }
+
+    private final class Once<T>: @unchecked Sendable {
+        private let lock = NSLock()
+        private var continuation: CheckedContinuation<T, Error>?
+        init(_ continuation: CheckedContinuation<T, Error>) { self.continuation = continuation }
+        func finish(_ result: Result<T, Error>) {
+            lock.lock()
+            let pending = continuation
+            continuation = nil
+            lock.unlock()
+            pending?.resume(with: result)
+        }
+    }
+
+    private static func race<T>(_ work: @escaping @MainActor () async throws -> T, onTimeout: @escaping @MainActor () -> Void) async throws -> T {
+        try await withCheckedThrowingContinuation { continuation in
+            let once = Once(continuation)
+            Task { @MainActor in
+                do { once.finish(.success(try await work())) } catch { once.finish(.failure(error)) }
+            }
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(180))
+                onTimeout()
+                once.finish(.failure(Timeout()))
+            }
         }
     }
 
