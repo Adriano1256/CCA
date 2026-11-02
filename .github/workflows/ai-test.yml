@@ -1,0 +1,53 @@
+name: Testar a IA local
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'native-ios/EditorIA/AgentCore.swift'
+      - 'native-ios/EditorIA/LocalLLM.swift'
+      - 'tests/aitest/**'
+      - '.github/workflows/ai-test.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Preparar
+        run: |
+          cd tests/aitest
+          N=../../native-ios/EditorIA
+          cp main.swift.txt Sources/aitest/main.swift
+          # MotionTemplate só precisa do formato do catálogo aqui.
+          cat >> Sources/aitest/main.swift <<'SWIFT'
+
+          struct MotionTemplate: Codable { var id: String }
+          SWIFT
+          for f in LocalLLM AgentCore ProjectModel TimelineCore AudioDuckingPlanner DirectorPlanningCore DirectorTimelineMaterializer SceneEvaluator; do cp $N/$f.swift Sources/aitest/; done
+          swift build -c release 2>&1 | tail -15
+      - name: Rodar os modelos
+        run: |
+          mkdir -p ai-report
+          for spec in "qwen|https://huggingface.co/unsloth/Qwen3.5-2B-GGUF/resolve/main/Qwen3.5-2B-Q4_K_M.gguf" "gemma|https://huggingface.co/unsloth/gemma-4-E2B-it-qat-mobile-GGUF/resolve/main/gemma-4-E2B-it-qat-UD-Q2_K_XL.gguf"; do
+            FORMAT=${spec%%|*}; URL=${spec#*|}
+            curl -sSL -o model.gguf "$URL"
+            ls -lh model.gguf
+            (cd tests/aitest && ./.build/release/aitest ../../model.gguf "$FORMAT" 3) 2>/dev/null | tee "ai-report/$FORMAT.txt" || true
+            rm -f model.gguf
+          done
+      - name: Publicar resultado
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd ai-report 2>/dev/null || mkdir -p ai-report && cd ai-report
+          git init -q -b ai-logs .
+          git config user.name "ci"; git config user.email "ci@users.noreply.github.com"
+          git add -A; git commit -q -m "IA ${{ github.sha }}" --no-gpg-sign --allow-empty
+          git push -f "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}" ai-logs

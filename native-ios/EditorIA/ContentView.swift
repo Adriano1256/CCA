@@ -142,6 +142,13 @@ struct ContentView: View {
             playback.onTimeChange = { projectStore.playhead = $0 }
             rebuildPreview()
             if let first = store.project.overlays.first { loadMotionDraft(first) }
+            #if DEBUG
+            // Só nos testes automáticos: abre um painel para a captura de tela.
+            if let name = ProcessInfo.processInfo.environment["EDITORIA_OPEN"], let section = EditorSection(rawValue: name) {
+                selection = section
+                if horizontalSizeClass == .compact { sheetSection = section }
+            }
+            #endif
         }
         .onChange(of: store.project.updatedAt) { _, _ in rebuildPreview() }
         .onChange(of: store.project.id) { _, _ in

@@ -1,0 +1,62 @@
+import Foundation
+
+// Roda o modelo de verdade com pedidos em português e mostra o que ele decide fazer.
+func media(_ name: String, _ kind: String, _ duration: Double, sonora: Bool = false) -> LocalMedia {
+    LocalMedia(name: name, relativePath: "Media/\(name)", kind: kind, byteCount: 1, importOrder: 1, duration: duration, isSonora: sonora)
+}
+var project = EditorProject()
+project.name = "Asfalto no bairro"
+let opening = media("abertura.mp4", "Vídeo", 8), speech = media("morador.mp4", "Vídeo", 30, sonora: true), broll = media("obra.mp4", "Vídeo", 20), music = media("trilha.m4a", "Áudio", 120)
+project.media = [opening, speech, broll, music]
+project.clips = [
+    TimelineClip(mediaID: opening.id, track: "video", start: 0, duration: 8, label: "abertura"),
+    TimelineClip(mediaID: speech.id, track: "video", start: 8, duration: 30, label: "morador"),
+    TimelineClip(mediaID: broll.id, track: "broll", start: 12, duration: 20, volume: 0.8, label: "obra"),
+    TimelineClip(mediaID: music.id, track: "audio", start: 0, duration: 60, volume: 0.28, label: "trilha")
+]
+
+struct Case { let request: String; let check: (AgentPlan, AgentOutcome) -> Bool }
+let sorted = project.clips.sorted { $0.start < $1.start }
+let brollNumber = sorted.firstIndex { $0.label == "obra" }! + 1
+let cases: [Case] = [
+    Case(request: "Tira o som do B-roll") { _, o in o.project.clips.first { $0.label == "obra" }?.volume == 0 },
+    Case(request: "Abaixa a música para 10%") { _, o in abs((o.project.clips.first { $0.label == "trilha" }?.volume ?? 1) - 0.1) < 0.02 },
+    Case(request: "Coloca o título Asfalto Novo no início com efeito de impacto") { _, o in o.project.overlays.contains { $0.text.lowercased().contains("asfalto novo") && $0.start < 1 } },
+    Case(request: "Corta os 3 primeiros segundos do clipe 1") { _, o in o.project.clips.first { $0.label == "abertura" }?.duration == 5 },
+    Case(request: "Corta a fala do morador pela metade") { p, o in o.project.clips.first { $0.label == "morador" }?.duration == 30 },
+    Case(request: "Deixa as imagens mais saturadas na trilha de vídeo") { _, o in o.project.clips.filter { $0.track == "video" }.allSatisfy { $0.look.saturation > 1 } },
+    Case(request: "Coloca um zoom lento no clipe \(brollNumber)") { _, o in let c = o.project.clips.first { $0.label == "obra" }; return (c?.look.kenBurns ?? false) || !(c?.keyframes.isEmpty ?? true) },
+    Case(request: "Coloca uma tarja de nome da Maria Souza, moradora, em 10 segundos") { p, o in o.requests.contains { if case .motion(let t, _, _, _) = $0 { return t.contains("tarja") }; return false } || o.project.overlays.contains { $0.text.contains("Maria") } },
+    Case(request: "Monta o vídeo institucional") { p, _ in p.actions.contains { $0.tool == "assemble" } },
+    Case(request: "Faz essa imagem voar pela lua em 3D com raios laser") { p, o in p.actions.isEmpty || !o.blocked.isEmpty },
+    Case(request: "Quanto tempo tem o vídeo?") { p, _ in p.actions.isEmpty && p.reply.contains("6") }
+]
+
+let path = CommandLine.arguments[1]
+let format: ChatFormat = CommandLine.arguments[2] == "gemma" ? .gemma : .qwen
+let threads = Int32(CommandLine.arguments.count > 3 ? CommandLine.arguments[3] : "3") ?? 3
+let startLoad = Date()
+let engine = try LlamaEngine(path: path, contextSize: 4096, gpuLayers: 0, threads: threads)
+print(String(format: "Modelo carregado em %.1f s", Date().timeIntervalSince(startLoad)))
+var passed = 0
+let templates = (try? JSONDecoder().decode([MotionTemplate].self, from: Data(contentsOf: URL(fileURLWithPath: "../../native-ios/Motion/catalog.json"))))?.map(\.id) ?? []
+for item in cases {
+    let summary = AgentProtocol.projectSummary(project, playhead: 0, selectedClip: nil, motionTemplates: templates)
+    let prompt = AgentProtocol.formatPrompt(system: AgentProtocol.systemPrompt, user: "\(summary)\n\nPedido do editor: \(item.request)", format: format)
+    let start = Date()
+    do {
+        let raw = try engine.generate(prompt: prompt, grammar: AgentProtocol.grammar, maximumTokens: 300)
+        let seconds = Date().timeIntervalSince(start)
+        if let plan = AgentProtocol.parsePlan(raw) {
+            let outcome = AgentExecutor.apply(plan, to: project, playhead: 0)
+            let ok = item.check(plan, outcome)
+            if ok { passed += 1 }
+            print("\(ok ? "OK  " : "FALHA") [\(String(format: "%.0f", seconds))s] \(item.request)\n      -> \(raw.replacingOccurrences(of: "\n", with: " "))\n      bloqueado: \(outcome.blocked)")
+        } else {
+            print("FALHA [\(String(format: "%.0f", seconds))s] \(item.request): JSON inválido: \(raw)")
+        }
+    } catch {
+        print("ERRO \(item.request): \(error)")
+    }
+}
+print("RESULTADO: \(passed) de \(cases.count)")

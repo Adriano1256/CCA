@@ -1,5 +1,7 @@
 import Foundation
+#if canImport(LlamaSwift)
 import LlamaSwift
+#endif
 
 enum LocalLLMError: LocalizedError {
     case modelLoadFailed
@@ -21,6 +23,7 @@ enum LocalLLMError: LocalizedError {
     }
 }
 
+#if canImport(LlamaSwift)
 /// Roda um modelo GGUF no aparelho com llama.cpp. Nada sai do dispositivo.
 /// Use sempre a partir de uma única fila ou tarefa de cada vez.
 final class LlamaEngine: @unchecked Sendable {
@@ -134,3 +137,15 @@ final class LlamaEngine: @unchecked Sendable {
         return String(decoding: output, as: UTF8.self)
     }
 }
+#else
+/// O simulador do iOS não tem a biblioteca de IA; o resto do app funciona normalmente nele.
+final class LlamaEngine: @unchecked Sendable {
+    init(path: String, contextSize: Int, gpuLayers: Int32 = 99, vocabOnly: Bool = false, threads: Int32 = 4) throws {
+        throw LocalLLMError.modelLoadFailed
+    }
+
+    func generate(prompt: String, grammar: String?, maximumTokens: Int = 700, temperature: Float = 0.2, shouldStop: () -> Bool = { false }, onProgress: (Int) -> Void = { _ in }) throws -> String {
+        throw LocalLLMError.modelLoadFailed
+    }
+}
+#endif

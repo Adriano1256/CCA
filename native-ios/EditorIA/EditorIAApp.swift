@@ -16,6 +16,9 @@ struct EditorIAApp: App {
             ContentView()
                 .environmentObject(projectStore)
                 .preferredColorScheme(.dark)
+                #if DEBUG
+                .task { await SmokeTest.runIfRequested(store: projectStore) }
+                #endif
         }
     }
 }
