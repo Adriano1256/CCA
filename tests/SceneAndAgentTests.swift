@@ -471,6 +471,21 @@ enum SceneAndAgentTests {
         precondition(RuleAgent.plan(for: "Deixa as imagens mais saturadas na trilha de vídeo", project: project)?.actions.first?.kind == "saturation", "Saturação")
         precondition(RuleAgent.plan(for: "Coloca um zoom lento no clipe 2", project: project)?.actions.first?.clip == 2, "Zoom lento")
         precondition(RuleAgent.direct(for: "tira o som do b-roll e coloca legenda neon", project: project) == nil, "Dois pedidos vão para a IA")
+        let breu = RuleAgent.direct(for: "Edite esse vídeo de acordo com o padrão do Breu Branco, mas deixa 15 segundos de imagem de apoio e aí entra a primeira fala", project: project)!
+        precondition(breu.actions.first?.tool == "set_client" && breu.actions.first?.text == "Breu Branco", "Cliente pelo nome")
+        precondition(breu.actions.last?.tool == "assemble" && breu.actions.last?.value == 15, "Abertura de 15 s: \(breu.actions)")
+        precondition(AssemblyRequest.total(in: "monta um institucional de 1 minuto e meio") == 90, "Duração total")
+        precondition(AssemblyRequest.total(in: "monta com 2 minutos e 10 segundos") == 130, "Minutos e segundos")
+        precondition(AssemblyRequest.hold(in: "monta no padrão e o prefeito aparece 4 segundos") == 4, "Tempo da pessoa")
+        var clientProject = project
+        let clientList = ClientProfile.defaults
+        let assembled = AgentExecutor.apply(breu, to: clientProject, playhead: 0, clients: clientList)
+        precondition(assembled.project.clientID == clientList[0].id, "Projeto passa a ser do Breu Branco")
+        precondition(assembled.done.contains { $0.contains("15 s de abertura") && $0.contains("Breu Branco") }, "Montagem com o ajuste: \(assembled.done)")
+        clientProject.clientID = clientList[1].id
+        let standard = AgentExecutor.apply(AgentPlan(reply: "", actions: [AgentAction(tool: "assemble", kind: "institucional")]), to: clientProject, playhead: 0, clients: clientList)
+        precondition(standard.done.contains { $0.contains("8 s de abertura") && $0.contains("Tucuruí") }, "Sem ajuste usa o padrão do cliente: \(standard.done)")
+        precondition(AgentExecutor.apply(AgentPlan(reply: "", actions: [AgentAction(tool: "set_client", text: "Marabá")]), to: project, playhead: 0, clients: clientList).blocked.count == 1, "Cliente inexistente é avisado")
         precondition(RuleAgent.direct(for: "legenda estilo MrBeast", project: project)?.actions.last?.kind == "mrbeast", "Pedido simples resolve na hora")
         let obra = project.clips.sorted { $0.start < $1.start }.firstIndex { $0.label == "obra" }! + 1
         let tolerant = AgentExecutor.apply(AgentPlan(reply: "", actions: [AgentAction(tool: "set_volume", track: "audio", value: 10), AgentAction(tool: "trim_start", clip: obra, time: 1)]), to: project, playhead: 0)

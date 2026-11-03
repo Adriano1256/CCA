@@ -890,7 +890,7 @@ final class ProjectStore: ObservableObject {
 
     func applyAgentPlan(_ plan: AgentPlan) -> AgentOutcome {
         recordUndo()
-        let outcome = AgentExecutor.apply(plan, to: project, playhead: playhead)
+        let outcome = AgentExecutor.apply(plan, to: project, playhead: playhead, clients: clients)
         project = outcome.project
         project.overlays.sort { $0.start < $1.start }
         if let seek = outcome.seek { playhead = max(0, seek) }

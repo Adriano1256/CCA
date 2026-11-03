@@ -46,7 +46,7 @@ enum ChatFormat: String, Codable {
 enum AgentProtocol {
     static let tools: [String] = [
         "split", "delete", "ripple_delete", "move", "trim_start", "trim_end", "set_volume", "set_speed", "set_track",
-        "add_text", "delete_text", "set_color", "transition", "ken_burns", "zoom", "mark_sonora", "assemble",
+        "add_text", "delete_text", "set_color", "transition", "ken_burns", "zoom", "mark_sonora", "assemble", "set_client",
         "caption_style", "caption_color", "caption_size", "captions_off", "ducking", "seek", "transcribe", "analyze_sound", "motion", "export",
         "fade", "look", "music", "sound", "reframe", "prepare", "undo"
     ]
@@ -79,7 +79,7 @@ enum AgentProtocol {
     set_color(clip ou track,kind,value) kind: exposure(-2 a 2) contrast(0.5 a 1.5) saturation(0 a 2) temperature(3000 a 10000) shadows(-1 a 1) highlights(0 a 1)
     transition(clip ou track,kind,value) kind: dissolve slideLeft slideUp zoom wipe flash; value é a duração
     ken_burns(clip ou track) zoom lento em foto; zoom(clip,value) zoom até value ao longo do clipe
-    mark_sonora(clip) marca que o clipe tem fala; assemble(kind) kind: institucional ou stories, monta a timeline
+    mark_sonora(clip) marca que o clipe tem fala; set_client(text) escolhe o cliente pelo nome, como "Breu Branco" ou "Tucuruí"; assemble(time,value,duration,kind) kind: institucional ou stories, monta a timeline no padrão do cliente; value muda os segundos de imagem de apoio antes da primeira fala; duration muda a duração total desejada; time muda quantos segundos a pessoa aparece antes do B-roll cobrir
     caption_style(kind) legenda animada, kind: hormozi hormozi-classico mrbeast podcast tiktok-caixa tiktok-branca reels-pop verde-viral roxo-viral marca-texto emoji-viral palavra-forte foco sublinhado karaoke karaoke-fill karaoke-azul box reveal phrase onda balanco slam word pop gigante corte-seco tremor sombra-dura fogo militar giro esticado quadrinhos desenho bolha caneta caderno recadinho praia neon neon-rosa glitch maquina retro-game bloco placar elegante cinema luxo ouro minimalista editorial inst-limpa inst-faixa inst-cor inst-noticia inst-sublinhado katana motion-ia dois-mundos. Em vídeo de prefeitura prefira os inst-; caption_color(text) cor em hex como #FFD84D; caption_size(value) 40 a 140; captions_off() tira as legendas
     ducking(value) volume da música sob a fala, 0.05 a 0.8; fade(clip ou track,kind,value) kind: in ou out, value em segundos
     look(clip ou track,kind) kind: natural quente frio vibrante cinema "preto e branco"
@@ -112,6 +112,8 @@ enum AgentProtocol {
     {"reply":"Legenda neon.","actions":[{"tool":"caption_style","kind":"neon"}]}
     Pedido: texto animado katana escrito Obra entregue aos 5 segundos
     {"reply":"Texto animado no estilo Katana.","actions":[{"tool":"motion","time":5,"duration":3,"text":"Obra entregue","kind":"katana"}]}
+    Pedido: edita no padrão do Breu Branco, mas abre com 15 segundos de B-roll antes da primeira fala
+    {"reply":"Montando no padrão do Breu Branco, com 15 s de abertura.","actions":[{"tool":"set_client","text":"Breu Branco"},{"tool":"assemble","value":15,"kind":"institucional"}]}
     Pedido: quanto dura o vídeo?
     {"reply":"O vídeo tem 1 minuto e 32 segundos.","actions":[]}
     """
@@ -176,7 +178,7 @@ enum AgentProtocol {
 
 enum AgentExecutor {
     /// Aplica as ações em uma cópia do projeto. Fala nunca é cortada aqui, mesmo que a IA peça.
-    static func apply(_ plan: AgentPlan, to source: EditorProject, playhead: Double) -> AgentOutcome {
+    static func apply(_ plan: AgentPlan, to source: EditorProject, playhead: Double, clients: [ClientProfile] = []) -> AgentOutcome {
         var outcome = AgentOutcome(project: source)
         // A numeração é a da lista enviada à IA; não muda enquanto o plano é aplicado.
         let numbered = source.clips.filter { $0.track != "subject" }.sorted { $0.start < $1.start }.map(\.id)
@@ -307,10 +309,29 @@ enum AgentExecutor {
                 }
                 outcome.project.media[mediaIndex].isSonora = true
                 outcome.done.append("Clipe \(action.clip ?? 0) marcado como sonora")
+            case "set_client":
+                let wanted = AssemblyRequest.fold(action.text ?? "")
+                guard !wanted.isEmpty, let client = clients.first(where: { AssemblyRequest.fold($0.name).contains(wanted) || wanted.contains(AssemblyRequest.fold($0.name).replacingOccurrences(of: "prefeitura de ", with: "")) }) else {
+                    outcome.blocked.append("Cliente \"\(action.text ?? "")\" não encontrado nos perfis")
+                    continue
+                }
+                outcome.project.clientID = client.id
+                outcome.done.append("Cliente: \(client.name)")
             case "assemble":
+                // O padrão vem do perfil do cliente; o pedido pode mudar só um pedaço dele.
+                let client = clients.first { $0.id == outcome.project.clientID }
+                let opening = min(60, max(0, action.value ?? client?.openingDuration ?? 8))
+                let target = action.duration.map { min(600, max(10, $0)) }
+                let hold = min(10, max(0.5, action.time ?? 2.5))
                 let draft = action.kind == "stories"
                     ? DirectorPlanningCore.buildStoriesDraft(media: outcome.project.directorMedia)
-                    : DirectorPlanningCore.buildInstitutionalDraft(media: outcome.project.directorMedia)
+                    : DirectorPlanningCore.buildInstitutionalDraft(
+                        media: outcome.project.directorMedia,
+                        openingDuration: opening,
+                        personHold: hold,
+                        targetMinimum: target.map { max(5, $0 - 10) } ?? client?.targetMinimum ?? 90,
+                        targetMaximum: target.map { $0 + 10 } ?? client?.targetMaximum ?? 120
+                    )
                 let instructions = DirectorTimelineMaterializer.makeInstructions(draft: draft, media: outcome.project.directorMedia, appendAt: 0)
                 guard !instructions.isEmpty else { outcome.blocked.append("Stories com vídeo precisam da sua aprovação na aba Diretor IA"); continue }
                 outcome.project.clips = outcome.project.clips.filter { $0.track == "audio" || $0.track == "sfx" || $0.track == "motion" }
@@ -319,7 +340,13 @@ enum AgentExecutor {
                     outcome.project.clips.append(TimelineClip(mediaID: mediaID, track: item.track, start: item.timelineStart, duration: item.duration, sourceIn: item.sourceIn, volume: item.volume, label: item.label))
                 }
                 outcome.project.profile = draft.profile
-                outcome.done.append("Montagem \(draft.profile) aplicada; falas inteiras")
+                var details = ["falas inteiras"]
+                if action.kind != "stories" {
+                    details.insert(String(format: "%.0f s de abertura", opening), at: 0)
+                    if let target { details.append(String(format: "cerca de %.0f s no total", target)) }
+                    if action.time != nil { details.append(String(format: "pessoa aparece %.1f s antes do B-roll", hold)) }
+                }
+                outcome.done.append("Montagem \(draft.profile)\(client.map { " (\($0.name))" } ?? ""): " + details.joined(separator: ", "))
             case "caption_style":
                 if let kind = action.kind, let preset = CaptionPreset.find(kind) ?? CaptionPreset.match(kind) {
                     preset.apply(to: &outcome.project)
@@ -514,11 +541,81 @@ enum MotionImport {
 
 
 /// Entende pedidos comuns sem modelo de IA, para o chat funcionar desde a primeira abertura.
+/// Lê do pedido as mudanças no padrão de montagem: "abre com 15 segundos de B-roll", "1 minuto e meio", "padrão do Breu".
+enum AssemblyRequest {
+    static func fold(_ text: String) -> String {
+        text.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: Locale(identifier: "pt_BR")).trimmingCharacters(in: .whitespaces)
+    }
+
+    private static func number(_ pattern: String, in text: String) -> Double? {
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]),
+              let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
+              let range = Range(match.range(at: 1), in: text) else { return nil }
+        return Double(text[range].replacingOccurrences(of: ",", with: "."))
+    }
+
+    static func isAssembly(_ request: String) -> Bool {
+        let text = fold(request)
+        let verb = ["mont", "edit", "faz o video", "faca o video", "faz um video", "faz esse video"].contains { text.contains($0) }
+        let pattern = ["padrao", "institucional", "prefeitura", "breu", "tucurui"].contains { text.contains($0) }
+        return verb && pattern
+    }
+
+    static func client(in request: String) -> String? {
+        let text = fold(request)
+        if text.contains("breu") { return "Breu Branco" }
+        if text.contains("tucurui") { return "Tucuruí" }
+        return nil
+    }
+
+    /// Segundos de imagem de apoio antes da primeira fala.
+    static func opening(in request: String) -> Double? {
+        let text = fold(request)
+        return number(#"(\d+(?:[.,]\d+)?)\s*(?:s|seg|segundos?)\s+(?:de\s+)?(?:b-?\s?roll|imagens?|imagem de apoio|apoio|abertura|musica)"#, in: text)
+            ?? number(#"abertura\s+(?:de|com)\s+(\d+(?:[.,]\d+)?)"#, in: text)
+    }
+
+    /// Duração total desejada.
+    static func total(in request: String) -> Double? {
+        let text = fold(request)
+        if text.contains("minuto e meio") || text.contains("1m30") || text.contains("1:30") { return 90 }
+        if let minutes = number(#"(\d+(?:[.,]\d+)?)\s*minutos?"#, in: text) {
+            let seconds = number(#"minutos?\s+e\s+(\d+)\s*(?:s|seg|segundos?)"#, in: text) ?? 0
+            return minutes * 60 + seconds
+        }
+        return number(#"(?:total|video)\s+de\s+(\d+)\s*(?:s|seg|segundos?)"#, in: text)
+    }
+
+    /// Quanto a pessoa aparece antes de o B-roll cobrir.
+    static func hold(in request: String) -> Double? {
+        number(#"(?:pessoa|prefeito|entrevistado|ela|ele)\s+aparece\w*\s+(?:por\s+)?(\d+(?:[.,]\d+)?)\s*(?:s|seg|segundos?)"#, in: fold(request))
+    }
+
+    static func plan(for request: String) -> AgentPlan {
+        var actions: [AgentAction] = []
+        var notes: [String] = []
+        if let client = client(in: request) {
+            actions.append(AgentAction(tool: "set_client", text: client))
+            notes.append("no padrão de \(client)")
+        } else {
+            notes.append("no padrão do cliente do projeto")
+        }
+        let opening = opening(in: request), total = total(in: request), hold = hold(in: request)
+        if let opening { notes.append(String(format: "com %.0f s de abertura antes da primeira fala", opening)) }
+        if let total { notes.append(String(format: "cerca de %.0f s no total", total)) }
+        if let hold { notes.append(String(format: "pessoa aparecendo %.0f s antes do B-roll", hold)) }
+        actions.append(AgentAction(tool: "assemble", time: hold, value: opening, duration: total, kind: "institucional"))
+        return AgentPlan(reply: "Montando " + notes.joined(separator: ", ") + ". As falas ficam inteiras.", actions: actions)
+    }
+}
+
 enum RuleAgent {
     private static let verbs = ["coloca", "bota", "poe", "tira", "corta", "deixa", "faz", "muda", "aumenta", "abaixa", "adiciona", "remove", "aplica", "troca", "monta", "exporta", "acelera"]
 
     /// Pedido simples, de uma coisa só: o app resolve na hora, sem esperar a IA.
     static func direct(for request: String, project: EditorProject) -> AgentPlan? {
+        // Montagem no padrão, mesmo com ajustes no meio do pedido, é resolvida na hora.
+        if AssemblyRequest.isAssembly(request), !fold(request).contains("stories") { return AssemblyRequest.plan(for: request) }
         let text = fold(request)
         let words = text.split(whereSeparator: { $0 == " " || $0 == "," })
         let actions = words.filter { word in verbs.contains { word.hasPrefix($0) } }.count
@@ -557,8 +654,8 @@ enum RuleAgent {
         if has("prepara", "analisa", "analise") { return AgentPlan(reply: "Vou analisar fala, música e imagens.", actions: [AgentAction(tool: "prepare")]) }
         if has("transcrev") { return AgentPlan(reply: "Transcrevendo as sonoras.", actions: [AgentAction(tool: "transcribe")]) }
         if has("story", "stories") && has("mont", "faz", "cria") { return AgentPlan(reply: "Montando a sequência de Stories.", actions: [AgentAction(tool: "assemble", kind: "stories")]) }
-        if has("institucional", "prefeitura") && has("mont", "faz", "cria", "edita") || has("monta o video", "monta esse video", "monta o videos", "edita o video") {
-            return AgentPlan(reply: "Montando no padrão institucional, com as falas inteiras.", actions: [AgentAction(tool: "assemble", kind: "institucional")])
+        if AssemblyRequest.isAssembly(request) || has("institucional", "prefeitura") && has("mont", "faz", "cria", "edita") || has("monta o video", "monta esse video", "monta o videos", "edita o video") {
+            return AssemblyRequest.plan(for: request)
         }
         if has("legenda") {
             if has("tira", "remove", "desliga", "sem legenda") { return AgentPlan(reply: "Legendas desligadas.", actions: [AgentAction(tool: "captions_off")]) }
