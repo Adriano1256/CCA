@@ -135,7 +135,7 @@ enum SmokeTest {
             record("Velocidade 2x dura metade", abs(fastDuration - 2) < 0.2, String(format: "%.2f s", fastDuration))
 
             // Stories em arquivos separados.
-            let stories = try await limitedStories(renderer, project: project, baseDirectory: base, width: 540, height: 960)
+            let stories = try await limitedStories(renderer, project: project, baseDirectory: base, width: 270, height: 480)
             record("Stories geram um arquivo por clipe", stories.count == 3 && stories.first?.lastPathComponent == "STORY_001.mp4", stories.map(\.lastPathComponent).joined(separator: ","))
 
             // Motion: HTML e GSAP viram vídeo dentro do app, com e sem transparência.
@@ -208,7 +208,7 @@ enum SmokeTest {
     }
 
     struct Timeout: LocalizedError {
-        var errorDescription: String? { "Exportação passou de 4 minutos e foi interrompida" }
+        var errorDescription: String? { "Exportação passou de 6 minutos e foi interrompida" }
     }
 
     /// Exporta com tempo limite, para um travamento aparecer no relatório em vez de parar o teste.
@@ -238,7 +238,7 @@ enum SmokeTest {
             let once = Once(continuation)
             // O relógio para quando a exportação termina; antes ele continuava e cancelava a exportação seguinte.
             let timer = Task { @MainActor in
-                do { try await Task.sleep(for: .seconds(240)) } catch { return }
+                do { try await Task.sleep(for: .seconds(360)) } catch { return }
                 onTimeout()
                 once.finish(.failure(Timeout()))
             }

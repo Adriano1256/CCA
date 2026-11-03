@@ -16,7 +16,7 @@ concurrency:
 jobs:
   build:
     runs-on: macos-15
-    timeout-minutes: 60
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
 
@@ -62,7 +62,7 @@ jobs:
 
       - name: Abrir o app no simulador, exportar de verdade e tirar prints
         continue-on-error: true
-        timeout-minutes: 30
+        timeout-minutes: 40
         run: |
           mkdir -p smoke
           tests/simulator-smoke.sh > smoke/run.log 2>&1

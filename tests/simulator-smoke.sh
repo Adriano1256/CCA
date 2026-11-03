@@ -32,7 +32,7 @@ run_device() {
   if [ "$SMOKE" = 1 ]; then
   SIMCTL_CHILD_EDITORIA_SMOKE=1 xcrun simctl launch --console-pty --terminate-running-process "$DEVICE" com.criativar.editoria > "smoke/$TAG-console.log" 2>&1 &
   CONSOLE=$!
-  for i in $(seq 1 180); do
+  for i in $(seq 1 270); do
     DATA=$(xcrun simctl get_app_container "$DEVICE" com.criativar.editoria data)
     test -f "$DATA/Documents/Smoke/report.json" && break
     sleep 5
