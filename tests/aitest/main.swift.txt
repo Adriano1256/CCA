@@ -26,14 +26,13 @@ let cases: [Case] = [
     Case(request: "Corta a fala do morador pela metade") { p, o in o.project.clips.first { $0.label == "morador" }?.duration == 30 },
     Case(request: "Deixa as imagens mais saturadas na trilha de vídeo") { _, o in o.project.clips.filter { $0.track == "video" }.allSatisfy { $0.look.saturation > 1 } },
     Case(request: "Coloca um zoom lento no clipe \(brollNumber)") { _, o in let c = o.project.clips.first { $0.label == "obra" }; return (c?.look.kenBurns ?? false) || !(c?.keyframes.isEmpty ?? true) },
-    Case(request: "Coloca uma tarja de nome da Maria Souza, moradora, em 10 segundos") { p, o in o.requests.contains { if case .motion(let t, _, _, _) = $0 { return t.contains("tarja") }; return false } || o.project.overlays.contains { $0.text.contains("Maria") } },
+    Case(request: "Coloca uma tarja de nome da Maria Souza, moradora, em 10 segundos") { _, o in o.project.overlays.contains { $0.text.contains("Maria") } },
     Case(request: "Monta o vídeo institucional") { p, _ in p.actions.contains { $0.tool == "assemble" } },
     Case(request: "Edita no padrão do Breu Branco, mas deixa 15 segundos de imagem de apoio antes da primeira fala") { p, _ in p.actions.contains { $0.tool == "assemble" && $0.value == 15 } },
     Case(request: "Tira o som do B-roll e depois coloca uma legenda neon") { _, o in o.project.clips.first { $0.label == "obra" }?.volume == 0 && o.project.captionStyle.hasPrefix("neon") },
     Case(request: "Deixa o clipe 2 em câmera lenta pela metade da velocidade e coloca um título Obra Entregue aos 20 segundos") { p, o in p.actions.contains { $0.tool == "set_speed" } && o.project.overlays.contains { $0.text.lowercased().contains("obra entregue") } },
     Case(request: "Coloca legenda estilo MrBeast") { _, o in o.project.captionStyle == "mrbeast" },
     Case(request: "Quero uma legenda neon") { _, o in o.project.captionStyle.hasPrefix("neon") },
-    Case(request: "Faz um texto animado estilo katana escrito Asfalto novo") { _, o in o.requests.contains { if case .motion(let t, let x, _, _) = $0 { return t == "katana" && x.lowercased().contains("asfalto") }; return false } },
     Case(request: "Faz essa imagem voar pela lua em 3D com raios laser") { p, o in p.actions.isEmpty || !o.blocked.isEmpty },
     Case(request: "Quanto tempo tem o vídeo?") { p, _ in p.actions.isEmpty && p.reply.contains("6") }
 ]
@@ -46,9 +45,8 @@ let startLoad = Date()
 let engine = try LlamaEngine(path: path, contextSize: 4096, gpuLayers: 0, threads: threads)
 print(String(format: "Modelo carregado em %.1f s", Date().timeIntervalSince(startLoad)))
 var passed = 0
-let templates = (try? JSONDecoder().decode([MotionTemplate].self, from: Data(contentsOf: URL(fileURLWithPath: "../../native-ios/Motion/catalog.json"))))?.map(\.id) ?? []
 for item in cases {
-    let summary = AgentProtocol.projectSummary(project, playhead: 0, selectedClip: nil, motionTemplates: templates)
+    let summary = AgentProtocol.projectSummary(project, playhead: 0, selectedClip: nil)
     let prompt = AgentProtocol.formatPrompt(system: AgentProtocol.systemPrompt, user: "\(summary)\n\nPedido do editor: \(item.request)", format: format)
     // Como no app: pedido simples é resolvido na hora, sem a IA.
     if let plan = RuleAgent.direct(for: item.request, project: project) {

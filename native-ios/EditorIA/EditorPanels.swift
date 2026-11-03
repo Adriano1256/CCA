@@ -123,7 +123,6 @@ struct AIAssistantPanel: View {
                 store.project,
                 playhead: store.playhead,
                 selectedClip: store.selectedClipID,
-                motionTemplates: MotionTemplate.loadCatalog().map(\.id) + MotionTemplate.kineticStyles,
                 libraryMoods: Array(Set(store.library.map(\.mood))).sorted()
             )
             agent.ask(request, model: model, modelURL: models.url(for: model), summary: summary, fallback: RuleAgent.plan(for: request, project: store.project))
@@ -214,166 +213,6 @@ struct ModelManagerSheet: View {
             .navigationTitle("Modelos de IA")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Fechar") { dismiss() } } }
-        }
-    }
-}
-
-// MARK: - Motion
-
-struct MotionGalleryPanel: View {
-    @EnvironmentObject private var store: ProjectStore
-    @ObservedObject var engine: MotionEngine
-    let width: Int
-    let height: Int
-    @State private var catalog: [MotionTemplate] = []
-    @State private var selected: MotionTemplate?
-    @State private var showImporter = false
-    @State private var errorText: String?
-
-    var body: some View {
-        panelBackground {
-            Label("Motion", systemImage: "wand.and.stars").font(.title3.bold())
-            Text("Animações em HTML e GSAP, como no HyperFrames, geradas aqui no aparelho e sem internet. Elas usam as cores e o logo do cliente do projeto e se adaptam à proporção escolhida.")
-                .font(.caption).foregroundStyle(.secondary)
-            if engine.isRendering {
-                ProgressView(value: engine.progress)
-                HStack {
-                    Text(engine.status).font(.caption2).foregroundStyle(.secondary)
-                    Spacer()
-                    Button("Cancelar") { engine.cancel() }.font(.caption)
-                }
-            }
-            ForEach(Array(Set(catalog.map(\.category))).sorted(), id: \.self) { category in
-                Text(category).font(.subheadline.bold())
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 8)], spacing: 8) {
-                    ForEach(catalog.filter { $0.category == category }) { template in
-                        Button { selected = template } label: {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(template.name).font(.caption.weight(.semibold)).multilineTextAlignment(.leading)
-                                Text(template.transparent ? "Sobre o vídeo" : "Tela cheia").font(.caption2).foregroundStyle(.secondary)
-                            }
-                            .frame(maxWidth: .infinity, minHeight: 54, alignment: .leading)
-                            .padding(8)
-                            .background(Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(engine.isRendering)
-                    }
-                }
-            }
-            Button { showImporter = true } label: { Label("Importar composição HTML", systemImage: "square.and.arrow.down") }
-                .buttonStyle(.bordered)
-                .disabled(engine.isRendering)
-            Text("Aceita composições no formato do HyperFrames, como as que eu gero para você no Claude. Vídeo e áudio dentro do HTML ainda não são aceitos.")
-                .font(.caption2).foregroundStyle(.secondary)
-            if let errorText {
-                Label(errorText, systemImage: "exclamationmark.triangle").font(.caption).foregroundStyle(.red)
-            }
-        }
-        .onAppear { if catalog.isEmpty { catalog = MotionTemplate.loadCatalog() } }
-        .sheet(item: $selected) { template in
-            MotionTemplateSheet(template: template, engine: engine, width: width, height: height)
-        }
-        .fileImporter(isPresented: $showImporter, allowedContentTypes: [.html]) { result in
-            if case .success(let url) = result { importHTML(url) }
-        }
-    }
-
-    private func importHTML(_ url: URL) {
-        let access = url.startAccessingSecurityScopedResource()
-        defer { if access { url.stopAccessingSecurityScopedResource() } }
-        guard let html = try? String(contentsOf: url, encoding: .utf8) else {
-            errorText = "Não foi possível ler o arquivo."
-            return
-        }
-        let output = store.newMotionURL()
-        let name = url.deletingPathExtension().lastPathComponent
-        let duration = MotionImport.duration(in: html) ?? 5
-        let start = store.playhead
-        errorText = nil
-        Task {
-            do {
-                let warnings = try await engine.renderImported(html: html, width: width, height: height, frameRate: 30, output: output)
-                store.addMotionClip(file: output, name: name, start: start, duration: duration, opaque: false)
-                if !warnings.isEmpty { errorText = "Estes recursos dependem de internet e não foram carregados: \(warnings.joined(separator: ", "))" }
-            } catch {
-                errorText = error.localizedDescription
-            }
-        }
-    }
-}
-
-struct MotionTemplateSheet: View {
-    @EnvironmentObject private var store: ProjectStore
-    @Environment(\.dismiss) private var dismiss
-    let template: MotionTemplate
-    @ObservedObject var engine: MotionEngine
-    let width: Int
-    let height: Int
-    @State private var values: [String: String] = [:]
-    @State private var duration = 4.0
-    @State private var errorText: String?
-
-    var body: some View {
-        NavigationStack {
-            Form {
-                ForEach(template.fields, id: \.self) { field in
-                    if field == "estilo" {
-                        Picker("Estilo", selection: Binding(get: { values[field] ?? "impacto" }, set: { values[field] = $0 })) {
-                            ForEach(MotionTemplate.kineticStyles, id: \.self) { Text($0).tag($0) }
-                        }
-                    } else {
-                        TextField(MotionTemplate.fieldTitles[field] ?? field, text: Binding(get: { values[field] ?? "" }, set: { values[field] = $0 }), axis: .vertical)
-                    }
-                }
-                if template.id == "kinetic" {
-                    Text("Cada frase vira uma cena. Separe com ponto final ou com |.").font(.caption).foregroundStyle(.secondary)
-                }
-                if template.id == "lista-entregas" {
-                    Text("Em Subtítulo, separe os itens com ponto e vírgula.").font(.caption).foregroundStyle(.secondary)
-                }
-                Section("Duração") {
-                    Stepper(value: $duration, in: 0.5...60, step: 0.5) { Text(String(format: "%.1f s", duration)) }
-                }
-                Section {
-                    Text(store.currentClient.map { "Cliente: \($0.name)" } ?? "Sem cliente neste projeto: usa as cores padrão.")
-                        .font(.caption).foregroundStyle(.secondary)
-                    Text(String(format: "Entra na timeline em %.1f s, no cursor.", store.playhead))
-                        .font(.caption).foregroundStyle(.secondary)
-                }
-                if let errorText {
-                    Text(errorText).font(.caption).foregroundStyle(.red)
-                }
-            }
-            .navigationTitle(template.name)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancelar") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) { Button("Gerar") { generate() } }
-            }
-            .onAppear { duration = template.duration }
-        }
-    }
-
-    private func generate() {
-        var all = values
-        let client = store.currentClient
-        all["cor1"] = client?.primaryHex ?? "#1F6FEB"
-        all["cor2"] = client?.secondaryHex ?? "#FFFFFF"
-        all["logo"] = store.logoDataURI(for: client)
-        let output = store.newMotionURL()
-        let start = store.playhead
-        let chosen = duration
-        let item = template
-        let w = width, h = height
-        dismiss()
-        Task {
-            do {
-                try await engine.renderTemplate(item, values: all, duration: chosen, width: w, height: h, frameRate: 30, output: output)
-                store.addMotionClip(file: output, name: item.name, start: start, duration: chosen, opaque: !item.transparent)
-            } catch {
-                store.status = error.localizedDescription
-            }
         }
     }
 }
@@ -633,7 +472,7 @@ struct ClientProfilesPanel: View {
                 ForEach(store.clients) { Text($0.name).tag(UUID?.some($0.id)) }
             }
             .pickerStyle(.menu)
-            Text("Cada cliente guarda seu logo, cores e tempos. Eles são usados nos motions e na montagem, sem misturar um cliente com outro.")
+            Text("Cada cliente guarda seu logo, cores e tempos. Eles são usados na montagem e nas legendas, sem misturar um cliente com outro.")
                 .font(.caption).foregroundStyle(.secondary)
             ForEach(store.clients) { client in
                 Button { editing = client } label: {

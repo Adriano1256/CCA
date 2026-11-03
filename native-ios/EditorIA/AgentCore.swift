@@ -21,7 +21,6 @@ struct AgentPlan: Codable, Equatable {
 enum AgentRequest: Equatable {
     case transcribeAll
     case analyzeSound
-    case motion(template: String, text: String, start: Double, duration: Double)
     case exportVideo
     case prepare
     case addMusic(mood: String)
@@ -47,7 +46,7 @@ enum AgentProtocol {
     static let tools: [String] = [
         "split", "delete", "ripple_delete", "move", "trim_start", "trim_end", "set_volume", "set_speed", "set_track",
         "add_text", "delete_text", "set_color", "transition", "ken_burns", "zoom", "mark_sonora", "assemble", "set_client",
-        "caption_style", "caption_color", "caption_size", "captions_off", "ducking", "seek", "transcribe", "analyze_sound", "motion", "export",
+        "caption_style", "caption_color", "caption_size", "captions_off", "ducking", "seek", "transcribe", "analyze_sound", "export",
         "fade", "look", "music", "sound", "reframe", "prepare", "undo"
     ]
 
@@ -87,9 +86,9 @@ enum AgentProtocol {
     sound(kind,time) efeito sonoro da biblioteca: transição impacto subida clique ambiente aplauso
     reframe() ajusta os clipes à proporção mantendo o assunto no quadro; prepare() analisa fala, música e imagens; undo() desfaz a última edição
     seek(time) move o cursor; transcribe() cria legendas; analyze_sound() detecta fala e música
-    motion(kind,text,time,duration) kind é o id do modelo de motion ou o estilo de texto animado: katana impacto mola cascata glitch giro3d contorno marca elegante maquina tremor motionia doismundos energia editorial; export() exporta o vídeo
+    export() exporta o vídeo
 
-    Trilhas: video, broll, voice, audio (música), sfx, motion, subject.
+    Trilhas: video, broll, voice, audio (música), sfx, subject.
 
     Regras:
     - Nunca invente falas, nomes, dados ou acontecimentos.
@@ -110,8 +109,6 @@ enum AgentProtocol {
     {"reply":"Título no início.","actions":[{"tool":"add_text","time":0,"duration":3,"text":"Bem-vindos","kind":"slam"}]}
     Pedido: legenda estilo neon
     {"reply":"Legenda neon.","actions":[{"tool":"caption_style","kind":"neon"}]}
-    Pedido: texto animado katana escrito Obra entregue aos 5 segundos
-    {"reply":"Texto animado no estilo Katana.","actions":[{"tool":"motion","time":5,"duration":3,"text":"Obra entregue","kind":"katana"}]}
     Pedido: edita no padrão do Breu Branco, mas abre com 15 segundos de B-roll antes da primeira fala
     {"reply":"Montando no padrão do Breu Branco, com 15 s de abertura.","actions":[{"tool":"set_client","text":"Breu Branco"},{"tool":"assemble","value":15,"kind":"institucional"}]}
     Pedido: quanto dura o vídeo?
@@ -128,7 +125,7 @@ enum AgentProtocol {
     }
 
     /// Resumo do projeto para a IA. Sem caminhos de arquivo e limitado para caber no contexto.
-    static func projectSummary(_ project: EditorProject, playhead: Double, selectedClip: UUID?, motionTemplates: [String] = [], libraryMoods: [String] = [], maximumClips: Int = 40) -> String {
+    static func projectSummary(_ project: EditorProject, playhead: Double, selectedClip: UUID?, libraryMoods: [String] = [], maximumClips: Int = 40) -> String {
         var lines: [String] = []
         lines.append(String(format: "Projeto \"%@\", perfil %@, duração %.1f s, cursor em %.1f s.", project.name, project.profile, project.contentEnd, playhead))
         let clips = project.clips.filter { $0.track != "subject" }.sorted { $0.start < $1.start }
@@ -158,7 +155,6 @@ enum AgentProtocol {
                 lines.append(String(format: "%d. \"%@\" em %.1f s por %.1f s", index + 1, String(overlay.text.prefix(40)), overlay.start, overlay.duration))
             }
         }
-        if !motionTemplates.isEmpty { lines.append("Modelos de motion: \(motionTemplates.joined(separator: ", "))") }
         lines.append(libraryMoods.isEmpty ? "Biblioteca de sons: vazia." : "Biblioteca de sons: \(libraryMoods.joined(separator: ", ")).")
         return lines.joined(separator: "\n")
     }
@@ -408,8 +404,6 @@ enum AgentExecutor {
                 outcome.requests.append(.transcribeAll)
             case "analyze_sound":
                 outcome.requests.append(.analyzeSound)
-            case "motion":
-                outcome.requests.append(.motion(template: action.kind ?? "", text: action.text ?? "", start: action.time ?? playhead, duration: action.duration ?? 3))
             case "export":
                 outcome.requests.append(.exportVideo)
             default:
@@ -491,53 +485,6 @@ struct LocalModel: Identifiable, Equatable {
     }
 }
 
-/// Prepara uma composição HTML vinda de fora (por exemplo, feita por mim no HyperFrames) para rodar sem internet.
-enum MotionImport {
-    struct Prepared {
-        var html: String
-        /// Endereços externos que continuam no arquivo e não vão carregar offline.
-        var warnings: [String]
-    }
-
-    private static let localLibraries = ["gsap", "SplitText", "CustomEase", "lottie"]
-
-    static func prepare(html: String, libraryPath: String) -> Prepared {
-        var result = html
-        var warnings: [String] = []
-        let pattern = #"(?:src|href)\s*=\s*["'](https?://[^"']+)["']"#
-        if let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) {
-            let matches = regex.matches(in: html, range: NSRange(html.startIndex..., in: html))
-            for match in matches {
-                guard let range = Range(match.range(at: 1), in: html) else { continue }
-                let url = String(html[range])
-                if let library = localLibraries.first(where: { url.lowercased().contains($0.lowercased()) }) {
-                    result = result.replacingOccurrences(of: url, with: "\(libraryPath)/\(library).min.js")
-                } else {
-                    warnings.append(url)
-                }
-            }
-        }
-        let runtime = "<script src=\"\(libraryPath)/runtime.js\"></script>"
-        if let head = result.range(of: "</head>", options: .caseInsensitive) {
-            result.insert(contentsOf: runtime, at: head.lowerBound)
-        } else {
-            result = runtime + result
-        }
-        return Prepared(html: result, warnings: warnings)
-    }
-
-    static func isComposition(_ html: String) -> Bool {
-        // HyperFrames usa data-composition-id; os prompts de texto animado usam window.seek(t).
-        html.contains("data-composition-id") || html.contains("window.seek")
-    }
-
-    static func duration(in html: String) -> Double? {
-        guard let regex = try? NSRegularExpression(pattern: #"(?:data-duration\s*=\s*["']|\b(?:DURATION|DURACAO|TOTAL|duration)\s*[=:]\s*)([0-9]+(?:\.[0-9]+)?)"#),
-              let match = regex.firstMatch(in: html, range: NSRange(html.startIndex..., in: html)),
-              let range = Range(match.range(at: 1), in: html) else { return nil }
-        return Double(html[range])
-    }
-}
 
 
 /// Entende pedidos comuns sem modelo de IA, para o chat funcionar desde a primeira abertura.
@@ -685,15 +632,10 @@ enum RuleAgent {
             if !project.media.contains(where: { !$0.transcript.isEmpty }) { actions.insert(AgentAction(tool: "transcribe"), at: 0) }
             return AgentPlan(reply: "Legenda \(preset.name) aplicada.", actions: actions)
         }
-        // Texto animado em um dos estilos de motion.
-        if has("texto animado", "motion", "animacao", "letreiro"), let written {
-            let style = MotionStyles.all.first { text.contains($0) } ?? "impacto"
-            return AgentPlan(reply: "Texto animado no estilo \(style).", actions: [AgentAction(tool: "motion", time: atSeconds ?? (has("inicio", "comeco") ? 0 : nil), duration: 3, text: written, kind: style)])
-        }
         if has("tarja", "nome na tela", "lower third"), let name = quoted ?? capture(#"nome d[aoe]s?\s+(.+?)(?:\s+(?:em|aos|no|na)\s+\d|$)"#, in: request) ?? capture(#"tarja (?:d[aoe]s?|com)\s+(.+?)(?:\s+(?:em|aos|no|na)\s+\d|$)"#, in: request) {
-            return AgentPlan(reply: "Tarja de nome adicionada.", actions: [AgentAction(tool: "motion", time: atSeconds, duration: 4, text: name, kind: "tarja-nome")])
+            return AgentPlan(reply: "Nome na tela adicionado.", actions: [AgentAction(tool: "add_text", time: atSeconds, duration: 4, text: name, kind: "slide")])
         }
-        if has("titulo") || (has("escrito", "texto") && has("coloca", "bota", "poe", "adiciona")), let written {
+        if has("titulo", "texto animado") || (has("escrito", "texto") && has("coloca", "bota", "poe", "adiciona")), let written {
             let kind = has("impacto", "forte") ? "slam" : has("pula", "salta") ? "pop" : "fade"
             return AgentPlan(reply: "Título adicionado.", actions: [AgentAction(tool: "add_text", time: atSeconds ?? (has("inicio", "comeco") ? 0 : nil), duration: 3, text: written, kind: kind)])
         }
@@ -736,10 +678,6 @@ enum RuleAgent {
     }
 }
 
-/// Estilos do texto animado, conhecidos também fora da interface.
-enum MotionStyles {
-    static let all = ["katana", "impacto", "mola", "cascata", "glitch", "giro3d", "contorno", "marca", "elegante", "maquina", "tremor", "motionia", "doismundos", "energia", "editorial"]
-}
 
 
 /// O app e tudo que ele baixa para a IA não passam de 8 GB. Vídeos do usuário não entram nesta conta.

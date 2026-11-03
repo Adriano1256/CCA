@@ -599,7 +599,7 @@ final class FrameRenderer {
 /// Fontes das legendas, guardadas dentro do app. Funcionam sem internet.
 enum CaptionFonts {
     static let register: Void = {
-        guard let folder = Bundle.main.resourceURL?.appendingPathComponent("Motion/captionfonts"),
+        guard let folder = Bundle.main.resourceURL?.appendingPathComponent("CaptionFonts"),
               let files = try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil) else { return }
         for file in files where file.pathExtension == "ttf" {
             CTFontManagerRegisterFontsForURL(file as CFURL, .process, nil)

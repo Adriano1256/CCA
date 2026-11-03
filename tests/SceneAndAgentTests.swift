@@ -14,7 +14,7 @@ enum SceneAndAgentTests {
         openingCutsAlignToBeats(); karaokePhrases(); lutParses(); lutRejectsBadFile(); chromaRemovesGreen()
         grammarHasAllTools(); promptFormats(); parsesPlanWithNoise(); agentNeverCutsSpeech(); agentEdits()
         agentGroupsByTrack(); agentReportsUnknownTool(); agentDoesNotChangeOriginal(); summaryHasNoPaths(); oldClipDecodes()
-        openingFollowsBeats(); modelRecommendation(); motionImportRewrite(); exportOptions()
+        openingFollowsBeats(); modelRecommendation(); exportOptions()
         captionsFollowEdits(); captionGroups(); captionStyles(); cleanerDropsNoise(); reframeKeepsSubject(); ruleAgentUnderstands(); looksApply(); summaryKnowsImages()
         print("SceneAndAgent: 40 checks passed")
     }
@@ -305,18 +305,6 @@ enum SceneAndAgentTests {
         precondition(!LocalModel.looksValid(header: Array("<html".utf8), fileSize: 100, expected: 100), "Página de erro não vale")
     }
 
-    static func motionImportRewrite() {
-        let html = "<script src=\"https://cdn.jsdelivr.net/npm/gsap@3.14/dist/gsap.min.js\"></script><img src=\"a.png\">"
-        let result = MotionImport.prepare(html: html, libraryPath: "../lib")
-        precondition(result.html.contains("../lib/gsap.min.js") && !result.html.contains("jsdelivr"), "GSAP local")
-        precondition(result.html.contains("../lib/runtime.js"), "Runtime incluído")
-        precondition(MotionImport.prepare(html: "<script src=\"https://x.com/a.js\"></script>", libraryPath: "../lib").warnings.count == 1, "Avisa sobre o que depende de internet")
-        precondition(MotionImport.isComposition("<div data-composition-id=\"a\" data-duration=\"3\">"), "Reconhece composição")
-        precondition(MotionImport.duration(in: "<div data-composition-id=\"a\" data-duration=\"3.5\">") == 3.5, "Lê duração")
-        precondition(MotionImport.isComposition("<script>window.seek = function(t){}</script>"), "Reconhece composição com window.seek")
-        precondition(MotionImport.duration(in: "<script>const DURATION = 12.5; window.seek = f</script>") == 12.5, "Lê duração do prompt de texto animado")
-        precondition(!MotionImport.isComposition("<p>oi</p>"), "HTML comum não vale")
-    }
 
     static func exportOptions() {
         var options = ExportOptions()
@@ -464,10 +452,10 @@ enum SceneAndAgentTests {
         precondition(trim?.tool == "trim_start" && trim?.clip == 1 && trim?.value == 3, "Corte no início")
         let title = RuleAgent.plan(for: "Coloca o título Asfalto Novo no início com efeito de impacto", project: project)?.actions.first
         precondition(title?.tool == "add_text" && title?.text == "Asfalto Novo" && title?.time == 0 && title?.kind == "slam", "Título: \(String(describing: title))")
-        let kinetic = RuleAgent.plan(for: "Faz um texto animado estilo katana escrito Asfalto novo", project: project)?.actions.first
-        precondition(kinetic?.tool == "motion" && kinetic?.kind == "katana" && kinetic?.text == "Asfalto novo", "Texto animado: \(String(describing: kinetic))")
+        let animated = RuleAgent.plan(for: "Coloca um texto animado escrito Asfalto novo", project: project)?.actions.first
+        precondition(animated?.tool == "add_text" && animated?.text == "Asfalto novo", "Texto animado vira título: \(String(describing: animated))")
         let name = RuleAgent.plan(for: "Coloca uma tarja de nome da Maria Souza, moradora, em 10 segundos", project: project)?.actions.first
-        precondition(name?.kind == "tarja-nome" && name?.text?.hasPrefix("Maria Souza") == true && name?.time == 10, "Tarja: \(String(describing: name))")
+        precondition(name?.tool == "add_text" && name?.text?.hasPrefix("Maria Souza") == true && name?.time == 10, "Tarja: \(String(describing: name))")
         precondition(RuleAgent.plan(for: "Deixa as imagens mais saturadas na trilha de vídeo", project: project)?.actions.first?.kind == "saturation", "Saturação")
         precondition(RuleAgent.plan(for: "Coloca um zoom lento no clipe 2", project: project)?.actions.first?.clip == 2, "Zoom lento")
         let both = RuleAgent.direct(for: "Tira o som do B-roll e depois coloca uma legenda neon", project: project)

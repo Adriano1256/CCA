@@ -12,7 +12,6 @@ private enum EditorSection: String, CaseIterable, Identifiable {
     case media = "Mídia"
     case captions = "Legendas"
     case audio = "Áudio"
-    case motion = "Motion"
     case color = "Cor"
     case styles = "Perfis"
 
@@ -25,7 +24,6 @@ private enum EditorSection: String, CaseIterable, Identifiable {
         case .media: return "square.stack.3d.up"
         case .captions: return "captions.bubble"
         case .audio: return "waveform"
-        case .motion: return "wand.and.stars"
         case .color: return "circle.lefthalf.filled"
         case .styles: return "square.grid.2x2"
         }
@@ -46,7 +44,6 @@ struct ContentView: View {
     @State private var showApproval = false
     @StateObject private var models = ModelManager()
     @StateObject private var agent = AgentController()
-    @StateObject private var motion = MotionEngine()
     @State private var showLUTImporter = false
     @State private var showVoiceRecorder = false
     @State private var sonoraCutClipID: UUID?
@@ -480,25 +477,6 @@ struct ContentView: View {
             } else {
                 agent.addNote("Não há efeito do tipo \"\(kind)\" na biblioteca. Importe na aba Áudio.")
             }
-        case .motion(let templateID, let text, let start, let duration):
-            let catalog = MotionTemplate.loadCatalog()
-            // Pedido de texto animado com estilo vira o modelo livre.
-            let template = catalog.first { $0.id == templateID } ?? catalog.first { $0.id == "kinetic" }
-            guard let template else {
-                agent.addNote("Os modelos de motion não foram encontrados.")
-                return
-            }
-            let client = store.currentClient
-            var values = ["titulo": text, "cor1": client?.primaryHex ?? "#FFD84D", "cor2": client?.secondaryHex ?? "#FFFFFF", "logo": store.logoDataURI(for: client)]
-            if template.id == "kinetic", templateID != "kinetic" { values["estilo"] = templateID }
-            let output = store.newMotionURL()
-            let size = baseDimensions
-            do {
-                try await motion.renderTemplate(template, values: values, duration: duration, width: size.width, height: size.height, frameRate: 30, output: output)
-                store.addMotionClip(file: output, name: template.name, start: start, duration: duration, opaque: !template.transparent)
-            } catch {
-                agent.addNote(error.localizedDescription)
-            }
         }
     }
 
@@ -869,10 +847,9 @@ struct ContentView: View {
             }
             .padding()
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18))
+            titleEditorSection
         case .audio:
             audioAnalysisSection
-        case .motion:
-            motionStudioSection
         case .color:
             ColorPanel(showLUTImporter: $showLUTImporter)
         case .styles:
@@ -880,10 +857,9 @@ struct ContentView: View {
         }
     }
 
-    private var motionStudioSection: some View {
+    private var titleEditorSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            MotionGalleryPanel(engine: motion, width: baseDimensions.width, height: baseDimensions.height)
-            Label("Textos animados", systemImage: "textformat")
+            Label("Editar títulos", systemImage: "textformat")
                 .font(.title3.bold())
             Text("Edite posição, tamanho, rotação, contorno e animação dos textos. As alterações são aplicadas à composição e salvas no projeto local.")
                 .font(.subheadline).foregroundStyle(.secondary)
@@ -1325,7 +1301,6 @@ struct ContentView: View {
                 Text("Voz / sonora").tag("voice")
                 Text("Trilha musical").tag("audio")
                 Text("Efeitos sonoros").tag("sfx")
-                Text("Motion").tag("motion")
             }
             .pickerStyle(.menu)
             HStack(spacing: 8) {

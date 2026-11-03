@@ -138,41 +138,6 @@ enum SmokeTest {
             let stories = try await limitedStories(renderer, project: project, baseDirectory: base, width: 270, height: 480)
             record("Stories geram um arquivo por clipe", stories.count == 3 && stories.first?.lastPathComponent == "STORY_001.mp4", stories.map(\.lastPathComponent).joined(separator: ","))
 
-            // Motion: HTML e GSAP viram vídeo dentro do app, com e sem transparência.
-            let engine = MotionEngine()
-            let catalog = MotionTemplate.loadCatalog()
-            record("Catálogo de motion carregado", catalog.count >= 15, "\(catalog.count) modelos")
-            for (id, time) in [("abertura-institucional", 2.0), ("tarja-nome", 2.0), ("kinetic", 1.5)] {
-                guard let template = catalog.first(where: { $0.id == id }) else { continue }
-                do {
-                    let output = folder.appendingPathComponent("motion-\(id).mov")
-                    try await engine.renderTemplate(template, values: ["titulo": "Asfalto novo", "subtitulo": "Bairro Centro", "cor1": "#0B6E4F", "cor2": "#FFFFFF", "estilo": "mola"], duration: 3, width: 640, height: 360, frameRate: 30, output: output)
-                    let picture = try await frame(of: output, at: time)
-                    try UIImage(cgImage: picture).pngData()?.write(to: folder.appendingPathComponent("motion-\(id).png"))
-                    record("Motion \(id) diagnóstico", !engine.lastDiagnostics.contains("\"erros\":[\""), engine.lastDiagnostics)
-                    let early = try await frame(of: output, at: 0.05)
-                    let change = difference(early, picture)
-                    record("Motion \(id) se mexe", change > 2, String(format: "diferença %.1f", change))
-                    let seconds = try await AVURLAsset(url: output).load(.duration).seconds
-                    record("Motion \(id) renderizado", abs(seconds - 3) < 0.2, String(format: "%.2f s", seconds))
-
-                    var withMotion = project
-                    let motionMedia = LocalMedia(name: id, relativePath: "Media/\(id).mov", kind: "Vídeo", byteCount: 1, importOrder: 9, duration: 3, isDerived: true)
-                    try? FileManager.default.copyItem(at: output, to: base.appendingPathComponent("Media/\(id).mov"))
-                    withMotion.media.append(motionMedia)
-                    withMotion.clips.append(TimelineClip(mediaID: motionMedia.id, track: "motion", start: 0, duration: 3, volume: 0, label: id))
-                    let mixed = try await limited(renderer, project: withMotion, baseDirectory: base, width: 640, height: 360)
-                    let check = try await sampled(2, tag: "mix-\(id)", x: 0.9, y: template.transparent ? 0.1 : 0.8, url: mixed)
-                    if template.transparent {
-                        record("Motion transparente deixa o vídeo aparecer", check.b > 150, "\(check)")
-                    } else {
-                        record("Motion de tela cheia cobre o vídeo", check.g > 60 && check.b < 150, "\(check)")
-                    }
-                } catch {
-                    record("Motion \(id)", false, error.localizedDescription)
-                }
-            }
-
             // Salva e reabre pelo armazenamento real do app; o projeto fica aberto para as fotos das telas.
             let names = ["azul.mp4", "vermelho.mp4", "foto.png"]
             let imports = names.map { base.appendingPathComponent("Media/\($0)") }

@@ -1,5 +1,0 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="stylesheet" href="../lib/base.css"><style>.b{position:absolute;top:0;bottom:0;width:25.2%;background:var(--c1);transform-origin:top}</style>
-<script src="../lib/gsap.min.js"></script><script src="../lib/runtime.js"></script><script>window.VARS={{VARS_JSON}};</script><script src="../lib/kit.js"></script>
-</head><body><div id="stage" data-composition-id="transicao-cortina" data-duration="{{DURATION}}"><div class="b" id="a" style="left:0"></div><div class="b" id="b" style="left:25%"></div><div class="b" id="c" style="left:50%"></div><div class="b" id="d" style="left:75%"></div></div>
-<script>cssVars();var D=parseFloat(document.getElementById('stage').dataset.duration);var tl=comp(D);tl.fromTo('.b',{scaleY:0},{scaleY:1,transformOrigin:'top',duration:D*.45,stagger:.05,ease:'power3.inOut'},0);tl.to('.b',{scaleY:0,transformOrigin:'bottom',duration:D*.45,stagger:.05,ease:'power3.inOut'},D*.45);tl.set({},{},D);</script></body></html>

@@ -1080,39 +1080,6 @@ final class ProjectStore: ObservableObject {
         return media.beats.map { clip.start + ($0 - clip.sourceIn) / speed }.filter { $0 >= clip.start && $0 <= clip.end }
     }
 
-    // MARK: - Motion
-
-    var motionDirectoryURL: URL {
-        let folder = mediaDirectory.appendingPathComponent("Motion", isDirectory: true)
-        try? fileManager.createDirectory(at: folder, withIntermediateDirectories: true)
-        return folder
-    }
-
-    func newMotionURL() -> URL {
-        motionDirectoryURL.appendingPathComponent("motion-\(UUID().uuidString).mov")
-    }
-
-    /// O motion renderizado entra na timeline como um clipe editável.
-    func addMotionClip(file: URL, name: String, start: Double, duration: Double, opaque: Bool) {
-        recordUndo()
-        let item = LocalMedia(
-            name: name,
-            relativePath: "Media/Motion/\(file.lastPathComponent)",
-            kind: "Vídeo",
-            byteCount: ((try? fileManager.attributesOfItem(atPath: file.path)[.size]) as? NSNumber)?.int64Value ?? 0,
-            importOrder: project.media.count + 1,
-            duration: duration,
-            isDerived: true
-        )
-        project.media.append(item)
-        let clip = TimelineClip(mediaID: item.id, track: "motion", start: start, duration: duration, volume: 0, label: name)
-        project.clips.append(clip)
-        selectedClipID = clip.id
-        selectedMediaID = item.id
-        status = "Motion \"\(name)\" na timeline"
-        saveProject()
-    }
-
     // MARK: - Clientes
 
     @Published private(set) var clients: [ClientProfile] = []
@@ -1176,14 +1143,6 @@ final class ProjectStore: ObservableObject {
         } catch {
             status = "Não foi possível salvar o logo: \(error.localizedDescription)"
         }
-    }
-
-    /// Logo como endereço embutido, para os modelos de motion funcionarem sem acesso a outros arquivos.
-    func logoDataURI(for client: ClientProfile?) -> String {
-        guard let path = client?.logoRelativePath,
-              let data = try? Data(contentsOf: projectDirectory.appendingPathComponent(path)) else { return "" }
-        let mime = path.lowercased().hasSuffix("png") ? "image/png" : "image/jpeg"
-        return "data:\(mime);base64,\(data.base64EncodedString())"
     }
 
     private func timecode(_ value: Double) -> String {

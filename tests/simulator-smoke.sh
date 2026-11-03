@@ -43,7 +43,7 @@ run_device() {
   fi
 
   # 2. Fotos de cada tela, já com o projeto de teste aberto.
-  for PANEL in "" "Chat" "Montagem" "Clipe" "Mídia" "Legendas" "Áudio" "Motion" "Cor" "Perfis"; do
+  for PANEL in "" "Chat" "Montagem" "Clipe" "Mídia" "Legendas" "Áudio" "Cor" "Perfis"; do
     FILE=$(echo "${PANEL:-principal}" | tr -d ' ' | iconv -f utf8 -t ascii//TRANSLIT | tr -d "'\`^~")
     SIMCTL_CHILD_EDITORIA_OPEN="$PANEL" xcrun simctl launch --terminate-running-process "$DEVICE" com.criativar.editoria
     sleep 7

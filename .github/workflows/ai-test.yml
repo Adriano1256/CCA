@@ -31,11 +31,6 @@ jobs:
           cd tests/aitest
           N=../../native-ios/EditorIA
           cp main.swift.txt Sources/aitest/main.swift
-          # MotionTemplate só precisa do formato do catálogo aqui.
-          cat >> Sources/aitest/main.swift <<'SWIFT'
-
-          struct MotionTemplate: Codable { var id: String }
-          SWIFT
           for f in LocalLLM AgentCore CaptionPresets ProjectModel TimelineCore AudioDuckingPlanner DirectorPlanningCore DirectorTimelineMaterializer SceneEvaluator; do cp $N/$f.swift Sources/aitest/; done
           swift build -c release 2>&1 | tee ../../ai-report/compilacao.txt | tail -15
       - name: Rodar os modelos

@@ -15,15 +15,15 @@ settings:
     SWIFT_VERSION: "5.0"
     IPHONEOS_DEPLOYMENT_TARGET: "17.0"
     TARGETED_DEVICE_FAMILY: "1,2"
-    MARKETING_VERSION: "0.27"
-    CURRENT_PROJECT_VERSION: "27"
+    MARKETING_VERSION: "0.28"
+    CURRENT_PROJECT_VERSION: "28"
 targets:
   EditorIA:
     type: application
     platform: iOS
     sources:
       - path: native-ios/EditorIA
-      - path: native-ios/Motion
+      - path: native-ios/CaptionFonts
         type: folder
         buildPhase: resources
     dependencies:

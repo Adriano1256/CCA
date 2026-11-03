@@ -1,5 +1,0 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="stylesheet" href="../lib/base.css"><style>#t{position:absolute;inset:0;display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:1vmin 2.4vmin;text-align:center;padding:0 7vw;font-family:Anton;font-size:12vmin;line-height:1.08;text-transform:uppercase;color:#fff;text-shadow:0 .6vmin 2.4vmin #000a}#t .word:nth-child(odd){color:var(--c1)}</style>
-<script src="../lib/gsap.min.js"></script><script src="../lib/runtime.js"></script><script>window.VARS={{VARS_JSON}};</script><script src="../lib/kit.js"></script>
-</head><body><div id="stage" data-composition-id="tipografia-palavras" data-duration="{{DURATION}}"><div id="t"></div></div>
-<script>cssVars();var D=parseFloat(document.getElementById('stage').dataset.duration);var tl=comp(D);var w=words('t','titulo','CADA PALAVRA TEM FORÇA');var step=Math.min(.32,(D-.6)/Math.max(1,w.length));tl.from(w,{scale:2.2,opacity:0,duration:.22,stagger:step,ease:'power4.out'},.05);tl.to('#t',{opacity:0,duration:.2},D-.2);tl.set({},{},D);</script></body></html>
