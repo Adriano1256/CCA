@@ -272,7 +272,7 @@ struct EditorProject: Codable {
     var captionStyle: String = "karaoke"
     var captionHighlightHex: String = "#FFD84D"
     var captionTextHex: String = "#FFFFFF"
-    var captionFontSize: Double = 78
+    var captionFontSize: Double = 88
     var captionFontStyle: String = "preset"
     /// Altura da legenda (0 = topo, 1 = base). Sem valor, usa a posição segura da proporção.
     var captionVertical: Double?

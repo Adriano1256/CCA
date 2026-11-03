@@ -149,6 +149,9 @@ enum SmokeTest {
                     try await engine.renderTemplate(template, values: ["titulo": "Asfalto novo", "subtitulo": "Bairro Centro", "cor1": "#0B6E4F", "cor2": "#FFFFFF", "estilo": "mola"], duration: 3, width: 640, height: 360, frameRate: 30, output: output)
                     let picture = try await frame(of: output, at: time)
                     try UIImage(cgImage: picture).pngData()?.write(to: folder.appendingPathComponent("motion-\(id).png"))
+                    let early = try await frame(of: output, at: 0.05)
+                    let change = difference(early, picture)
+                    record("Motion \(id) se mexe", change > 2, String(format: "diferença %.1f", change))
                     let seconds = try await AVURLAsset(url: output).load(.duration).seconds
                     record("Motion \(id) renderizado", abs(seconds - 3) < 0.2, String(format: "%.2f s", seconds))
 
@@ -278,6 +281,20 @@ enum SmokeTest {
         generator.requestedTimeToleranceBefore = .zero
         generator.requestedTimeToleranceAfter = .zero
         return try await generator.image(at: CMTime(seconds: time, preferredTimescale: 600)).image
+    }
+
+    /// Diferença média entre dois quadros, de 0 a 255, numa versão pequena das imagens.
+    private static func difference(_ first: CGImage, _ second: CGImage) -> Double {
+        func small(_ image: CGImage) -> [UInt8] {
+            var data = [UInt8](repeating: 0, count: 64 * 36 * 4)
+            guard let context = CGContext(data: &data, width: 64, height: 36, bitsPerComponent: 8, bytesPerRow: 256, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return data }
+            context.draw(image, in: CGRect(x: 0, y: 0, width: 64, height: 36))
+            return data
+        }
+        let a = small(first), b = small(second)
+        var total = 0
+        for index in a.indices { total += abs(Int(a[index]) - Int(b[index])) }
+        return Double(total) / Double(a.count)
     }
 
     private static func pixel(of image: CGImage, x: CGFloat, y: CGFloat) -> (r: Int, g: Int, b: Int) {

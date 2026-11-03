@@ -48,6 +48,7 @@ final class MotionEngine: NSObject, ObservableObject, WKNavigationDelegate {
     @Published private(set) var status = ""
 
     private var webView: WKWebView?
+    private var renderWindow: UIWindow?
     private var navigation: CheckedContinuation<Void, Error>?
     private var cancelled = false
 
@@ -111,6 +112,8 @@ final class MotionEngine: NSObject, ObservableObject, WKNavigationDelegate {
             UIApplication.shared.isIdleTimerDisabled = false
             webView?.removeFromSuperview()
             webView = nil
+            renderWindow?.isHidden = true
+            renderWindow = nil
         }
 
         let page = folder.appendingPathComponent("templates/_render_\(UUID().uuidString).html")
@@ -190,11 +193,19 @@ final class MotionEngine: NSObject, ObservableObject, WKNavigationDelegate {
         view.scrollView.backgroundColor = .clear
         view.scrollView.isScrollEnabled = false
         view.navigationDelegate = self
-        // A página precisa estar em uma janela para ser fotografada; fica fora da área visível.
-        view.alpha = 0.011
+        // A página só é redesenhada a cada quadro se estiver numa janela visível.
+        // Ela ganha uma janela própria, atrás da janela do app, para não aparecer na tela.
         view.isUserInteractionEnabled = false
-        let window = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.flatMap(\.windows).first { $0.isKeyWindow }
-        window?.insertSubview(view, at: 0)
+        if let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first {
+            let window = UIWindow(windowScene: scene)
+            window.frame = frame
+            window.windowLevel = UIWindow.Level(rawValue: UIWindow.Level.normal.rawValue - 1)
+            window.isUserInteractionEnabled = false
+            window.backgroundColor = .clear
+            window.isHidden = false
+            window.addSubview(view)
+            renderWindow = window
+        }
         // Mesmas medidas em px CSS que a composição espera, independente da escala da tela.
         view.pageZoom = 1 / scale
         return view

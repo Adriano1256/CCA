@@ -518,12 +518,12 @@ final class FrameRenderer {
                     }
                 }
                 if glowing {
+                    // Brilho na cor de destaque, mais fraco nas palavras que não estão sendo faladas.
                     let shadow = NSShadow()
-                    shadow.shadowColor = FrameRenderer.uiColor(hex: word.glow ? project.captionHighlightHex : color)
-                    shadow.shadowBlurRadius = fontSize * 0.32
+                    shadow.shadowColor = FrameRenderer.uiColor(hex: project.captionHighlightHex).withAlphaComponent(word.glow ? 0.95 : 0.55)
+                    shadow.shadowBlurRadius = fontSize * (word.glow ? 0.26 : 0.16)
                     var attributes = plain
                     attributes[.shadow] = shadow
-                    draw(attributes)
                     draw(attributes)
                 }
                 if stroke > 0, let strokeHex = preset.stroke {
