@@ -140,7 +140,14 @@ final class FrameRenderer {
             let white = CIImage(color: CIColor(red: 1, green: 1, blue: 1, alpha: CGFloat(min(1, flash)) )).cropped(to: frame)
             canvas = white.composited(over: canvas)
         }
-        context.render(canvas.cropped(to: frame), to: output, bounds: frame, colorSpace: colorSpace)
+        // Espera o desenho terminar antes de entregar o quadro; sem isso, um quadro podia sair pela metade.
+        let destination = CIRenderDestination(pixelBuffer: output)
+        destination.colorSpace = colorSpace
+        if let task = try? context.startTask(toRender: canvas.cropped(to: frame), from: frame, to: destination, at: .zero) {
+            _ = try? task.waitUntilCompleted()
+        } else {
+            context.render(canvas.cropped(to: frame), to: output, bounds: frame, colorSpace: colorSpace)
+        }
     }
 
     private func composite(_ image: CIImage, state: LayerState, center: CGPoint, frame: CGRect, over canvas: CIImage) -> CIImage {

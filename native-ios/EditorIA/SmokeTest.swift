@@ -149,6 +149,7 @@ enum SmokeTest {
                     try await engine.renderTemplate(template, values: ["titulo": "Asfalto novo", "subtitulo": "Bairro Centro", "cor1": "#0B6E4F", "cor2": "#FFFFFF", "estilo": "mola"], duration: 3, width: 640, height: 360, frameRate: 30, output: output)
                     let picture = try await frame(of: output, at: time)
                     try UIImage(cgImage: picture).pngData()?.write(to: folder.appendingPathComponent("motion-\(id).png"))
+                    record("Motion \(id) diagnóstico", !engine.lastDiagnostics.contains("\"erros\":[\""), engine.lastDiagnostics)
                     let early = try await frame(of: output, at: 0.05)
                     let change = difference(early, picture)
                     record("Motion \(id) se mexe", change > 2, String(format: "diferença %.1f", change))
@@ -161,7 +162,7 @@ enum SmokeTest {
                     withMotion.media.append(motionMedia)
                     withMotion.clips.append(TimelineClip(mediaID: motionMedia.id, track: "motion", start: 0, duration: 3, volume: 0, label: id))
                     let mixed = try await limited(renderer, project: withMotion, baseDirectory: base, width: 640, height: 360)
-                    let check = try await sampled(2, tag: "mix-\(id)", x: 0.9, y: 0.1, url: mixed)
+                    let check = try await sampled(2, tag: "mix-\(id)", x: 0.9, y: template.transparent ? 0.1 : 0.8, url: mixed)
                     if template.transparent {
                         record("Motion transparente deixa o vídeo aparecer", check.b > 150, "\(check)")
                     } else {

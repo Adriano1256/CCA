@@ -49,6 +49,9 @@ final class MotionEngine: NSObject, ObservableObject, WKNavigationDelegate {
 
     private var webView: WKWebView?
     private var renderWindow: UIWindow?
+    /// Estado da última composição: erros, bibliotecas carregadas e fontes.
+    @Published private(set) var lastDiagnostics = ""
+    private static let diagnosticsScript = "JSON.stringify({erros:window.__errors||[],gsap:typeof gsap,kit:typeof cssVars,seek:typeof window.__seek,timelines:Object.keys(window.__timelines||{}),texto:(document.body.innerText||'').trim().length,fontes:document.fonts?document.fonts.status:'?'})"
     private var navigation: CheckedContinuation<Void, Error>?
     private var cancelled = false
 
@@ -126,9 +129,10 @@ final class MotionEngine: NSObject, ObservableObject, WKNavigationDelegate {
             navigation = continuation
             view.loadFileURL(page, allowingReadAccessTo: folder)
         }
-        // Espera fontes e layout.
-        _ = try? await view.evaluateJavaScript("document.fonts ? document.fonts.ready.then(function(){return true}) : true")
+        // Espera as fontes carregarem de verdade (evaluateJavaScript não espera promessas).
+        _ = try? await view.callAsyncJavaScript("if (document.fonts) { await document.fonts.ready; } return true;", arguments: [:], in: nil, contentWorld: .page)
         try await Task.sleep(for: .milliseconds(120))
+        lastDiagnostics = (try? await view.evaluateJavaScript(Self.diagnosticsScript) as? String) ?? "sem diagnóstico"
 
         try? FileManager.default.removeItem(at: output)
         let writer = try AVAssetWriter(outputURL: output, fileType: .mov)
@@ -180,6 +184,8 @@ final class MotionEngine: NSObject, ObservableObject, WKNavigationDelegate {
 
     private func makeWebView(width: Int, height: Int) async throws -> WKWebView {
         let configuration = WKWebViewConfiguration()
+        // Guarda erros de JavaScript da composição, para aparecerem no relatório.
+        configuration.userContentController.addUserScript(WKUserScript(source: "window.__errors=[];window.addEventListener('error',function(e){window.__errors.push(String(e.message)+' '+String(e.filename||'').split('/').pop()+':'+e.lineno)});", injectionTime: .atDocumentStart, forMainFrameOnly: true))
         // Tudo local: bloqueia qualquer acesso à internet a partir da composição.
         let rules = #"[{"trigger":{"url-filter":"^https?://.*"},"action":{"type":"block"}}]"#
         if let list = try? await WKContentRuleListStore.default().compileContentRuleList(forIdentifier: "editoria-offline", encodedContentRuleList: rules) {
