@@ -1,0 +1,523 @@
+Command line invocation:
+    /Applications/Xcode_16.4.app/Contents/Developer/usr/bin/xcodebuild -project EditorIASim.xcodeproj -scheme EditorIA -configuration Debug -destination "generic/platform=iOS Simulator" -derivedDataPath build-sim ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO build
+
+Build settings from command line:
+    ARCHS = arm64
+    CODE_SIGNING_ALLOWED = NO
+    ONLY_ACTIVE_ARCH = NO
+
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (1 target)
+    Target 'EditorIA' in project 'EditorIASim' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode_16.4.app/Contents/Developer/usr/bin/actool --print-asset-tag-combinations --output-format xml1 /Users/runner/work/CCA/CCA/native-ios/EditorIA/Assets.xcassets
+
+ExecuteExternalTool /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode_16.4.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+ExecuteExternalTool /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+Build description signature: eaf13ce99ddf15a0719a434ad9b42b8c
+Build description path: /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/XCBuildData/eaf13ce99ddf15a0719a434ad9b42b8c.xcbuilddata
+CreateBuildDirectory /Users/runner/work/CCA/CCA/build-sim/Build/Products
+    cd /Users/runner/work/CCA/CCA/EditorIASim.xcodeproj
+    builtin-create-build-directory /Users/runner/work/CCA/CCA/build-sim/Build/Products
+
+CreateBuildDirectory /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex
+    cd /Users/runner/work/CCA/CCA/EditorIASim.xcodeproj
+    builtin-create-build-directory /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex
+
+ClangStatCache /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk /Users/runner/work/CCA/CCA/build-sim/SDKStatCaches.noindex/iphonesimulator18.5-22F76-96ae0914227b19deccb34b33ba7b5dea.sdkstatcache
+    cd /Users/runner/work/CCA/CCA/EditorIASim.xcodeproj
+    /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -o /Users/runner/work/CCA/CCA/build-sim/SDKStatCaches.noindex/iphonesimulator18.5-22F76-96ae0914227b19deccb34b33ba7b5dea.sdkstatcache
+
+WriteAuxiliaryFile /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIASim-1db21bbb1abdf86ad5dd214906fea04a-VFS-iphonesimulator/all-product-headers.yaml
+    cd /Users/runner/work/CCA/CCA/EditorIASim.xcodeproj
+    write-file /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIASim-1db21bbb1abdf86ad5dd214906fea04a-VFS-iphonesimulator/all-product-headers.yaml
+
+CreateBuildDirectory /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator
+    cd /Users/runner/work/CCA/CCA/EditorIASim.xcodeproj
+    builtin-create-build-directory /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator
+
+CreateBuildDirectory /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator
+    cd /Users/runner/work/CCA/CCA/EditorIASim.xcodeproj
+    builtin-create-build-directory /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator
+
+WriteAuxiliaryFile /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA_const_extract_protocols.json (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    write-file /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA_const_extract_protocols.json
+
+WriteAuxiliaryFile /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA.SwiftFileList (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    write-file /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA.SwiftFileList
+
+WriteAuxiliaryFile /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA.SwiftConstValuesFileList (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    write-file /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA.LinkFileList (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    write-file /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA.LinkFileList
+
+WriteAuxiliaryFile /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA-OutputFileMap.json (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    write-file /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA-OutputFileMap.json
+
+WriteAuxiliaryFile /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA.hmap (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    write-file /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA.hmap
+
+WriteAuxiliaryFile /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA.DependencyStaticMetadataFileList (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    write-file /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA.DependencyStaticMetadataFileList
+
+WriteAuxiliaryFile /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA.DependencyMetadataFileList (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    write-file /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA.DependencyMetadataFileList
+
+WriteAuxiliaryFile /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA-project-headers.hmap (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    write-file /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA-project-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA-own-target-headers.hmap (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    write-file /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA-own-target-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA-generated-files.hmap (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    write-file /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA-generated-files.hmap
+
+WriteAuxiliaryFile /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA-all-target-headers.hmap (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    write-file /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA-all-target-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA-DebugDylibPath-normal-arm64.txt (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    write-file /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA-DebugDylibPath-normal-arm64.txt
+
+WriteAuxiliaryFile /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA-all-non-framework-target-headers.hmap (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    write-file /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA-all-non-framework-target-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA-DebugDylibInstallName-normal-arm64.txt (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    write-file /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA-DebugDylibInstallName-normal-arm64.txt
+
+MkDir /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    /bin/mkdir -p /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app
+
+Ld /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app/__preview.dylib normal (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios17.0-simulator -dynamiclib -isysroot /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -O0 -L/Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator -F/Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator -install_name @rpath/EditorIA.debug.dylib -dead_strip -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA_dependency_info.dat -o /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app/__preview.dylib
+
+MkDir /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/assetcatalog_output/unthinned (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    /bin/mkdir -p /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/assetcatalog_output/unthinned
+
+MkDir /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/assetcatalog_output/thinned (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    /bin/mkdir -p /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/assetcatalog_output/thinned
+
+GenerateAssetSymbols /Users/runner/work/CCA/CCA/native-ios/EditorIA/Assets.xcassets (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    /Applications/Xcode_16.4.app/Contents/Developer/usr/bin/actool /Users/runner/work/CCA/CCA/native-ios/EditorIA/Assets.xcassets --compile /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app --output-format human-readable-text --notices --warnings --export-dependency-info /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/assetcatalog_dependencies --output-partial-info-plist /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/assetcatalog_generated_info.plist --app-icon AppIcon --compress-pngs --enable-on-demand-resources YES --development-region en --target-device iphone --target-device ipad --minimum-deployment-target 17.0 --platform iphonesimulator --bundle-identifier com.criativar.editoria --generate-swift-asset-symbol-extensions NO --generate-swift-asset-symbols /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/DerivedSources/GeneratedAssetSymbols.swift --generate-objc-asset-symbols /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/DerivedSources/GeneratedAssetSymbols.h --generate-asset-symbol-index /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/DerivedSources/GeneratedAssetSymbols-Index.plist
+/* com.apple.actool.compilation-results */
+/Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/DerivedSources/GeneratedAssetSymbols-Index.plist
+/Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/DerivedSources/GeneratedAssetSymbols.h
+/Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/DerivedSources/GeneratedAssetSymbols.swift
+
+
+CpResource /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app/CaptionFonts /Users/runner/work/CCA/CCA/native-ios/CaptionFonts (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/runner/work/CCA/CCA/native-ios/CaptionFonts /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app
+
+CompileAssetCatalogVariant thinned /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app /Users/runner/work/CCA/CCA/native-ios/EditorIA/Assets.xcassets (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    /Applications/Xcode_16.4.app/Contents/Developer/usr/bin/actool /Users/runner/work/CCA/CCA/native-ios/EditorIA/Assets.xcassets --compile /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/assetcatalog_output/thinned --output-format human-readable-text --notices --warnings --export-dependency-info /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/assetcatalog_dependencies_thinned --output-partial-info-plist /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/assetcatalog_generated_info.plist_thinned --app-icon AppIcon --compress-pngs --enable-on-demand-resources YES --development-region en --target-device iphone --target-device ipad --minimum-deployment-target 17.0 --platform iphonesimulator
+/* com.apple.actool.compilation-results */
+/Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/assetcatalog_generated_info.plist_thinned
+/Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/assetcatalog_output/thinned/AppIcon60x60@2x.png
+/Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/assetcatalog_output/thinned/AppIcon76x76@2x~ipad.png
+/Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/assetcatalog_output/thinned/Assets.car
+
+
+SwiftDriver EditorIA normal arm64 com.apple.xcode.tools.swift.compiler (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    builtin-SwiftDriver -- /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name EditorIA -Onone -enforce-exclusivity\=checked @/Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -target arm64-apple-ios17.0-simulator -g -module-cache-path /Users/runner/work/CCA/CCA/build-sim/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/runner/work/CCA/CCA/build-sim/Index.noindex/DataStore -swift-version 5 -I /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator -F /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/CCA/CCA/build-sim/SDKStatCaches.noindex/iphonesimulator18.5-22F76-96ae0914227b19deccb34b33ba7b5dea.sdkstatcache -output-file-map /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/CCA/CCA/build-sim/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA-generated-files.hmap -Xcc -I/Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA-own-target-headers.hmap -Xcc -I/Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA-project-headers.hmap -Xcc -I/Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA-Swift.h -working-directory /Users/runner/work/CCA/CCA -experimental-emit-module-separately -disable-cmo
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ EditorIA (in target 'EditorIA' from project 'EditorIASim')
+EmitSwiftModule normal arm64 (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    
+
+SwiftCompile normal arm64 Compiling\ AgentCore.swift,\ AudioDuckingPlanner.swift,\ CaptionPresets.swift,\ ContentView.swift,\ DirectorPlanningCore.swift,\ DirectorTimelineMaterializer.swift,\ EditorIAApp.swift,\ EditorPanels.swift,\ FrameCompositor.swift,\ LocalAudioAnalysisService.swift /Users/runner/work/CCA/CCA/native-ios/EditorIA/AgentCore.swift /Users/runner/work/CCA/CCA/native-ios/EditorIA/AudioDuckingPlanner.swift /Users/runner/work/CCA/CCA/native-ios/EditorIA/CaptionPresets.swift /Users/runner/work/CCA/CCA/native-ios/EditorIA/ContentView.swift /Users/runner/work/CCA/CCA/native-ios/EditorIA/DirectorPlanningCore.swift /Users/runner/work/CCA/CCA/native-ios/EditorIA/DirectorTimelineMaterializer.swift /Users/runner/work/CCA/CCA/native-ios/EditorIA/EditorIAApp.swift /Users/runner/work/CCA/CCA/native-ios/EditorIA/EditorPanels.swift /Users/runner/work/CCA/CCA/native-ios/EditorIA/FrameCompositor.swift /Users/runner/work/CCA/CCA/native-ios/EditorIA/LocalAudioAnalysisService.swift (in target 'EditorIA' from project 'EditorIASim')
+SwiftCompile normal arm64 /Users/runner/work/CCA/CCA/native-ios/EditorIA/AgentCore.swift (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    
+
+SwiftCompile normal arm64 /Users/runner/work/CCA/CCA/native-ios/EditorIA/AudioDuckingPlanner.swift (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    
+
+SwiftCompile normal arm64 /Users/runner/work/CCA/CCA/native-ios/EditorIA/CaptionPresets.swift (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    
+
+SwiftCompile normal arm64 /Users/runner/work/CCA/CCA/native-ios/EditorIA/ContentView.swift (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    
+
+SwiftCompile normal arm64 /Users/runner/work/CCA/CCA/native-ios/EditorIA/DirectorPlanningCore.swift (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    
+
+SwiftCompile normal arm64 /Users/runner/work/CCA/CCA/native-ios/EditorIA/DirectorTimelineMaterializer.swift (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    
+
+SwiftCompile normal arm64 /Users/runner/work/CCA/CCA/native-ios/EditorIA/EditorIAApp.swift (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    
+
+SwiftCompile normal arm64 /Users/runner/work/CCA/CCA/native-ios/EditorIA/EditorPanels.swift (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    
+
+SwiftCompile normal arm64 /Users/runner/work/CCA/CCA/native-ios/EditorIA/FrameCompositor.swift (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    
+
+SwiftCompile normal arm64 /Users/runner/work/CCA/CCA/native-ios/EditorIA/LocalAudioAnalysisService.swift (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    
+
+SwiftCompile normal arm64 Compiling\ LocalDirectorService.swift,\ LocalLLM.swift,\ LocalTranscriptionService.swift,\ ModelManager.swift,\ PersonSegmentationService.swift,\ PickedMediaFile.swift,\ ProjectModel.swift,\ ProjectStore.swift,\ SceneEvaluator.swift /Users/runner/work/CCA/CCA/native-ios/EditorIA/LocalDirectorService.swift /Users/runner/work/CCA/CCA/native-ios/EditorIA/LocalLLM.swift /Users/runner/work/CCA/CCA/native-ios/EditorIA/LocalTranscriptionService.swift /Users/runner/work/CCA/CCA/native-ios/EditorIA/ModelManager.swift /Users/runner/work/CCA/CCA/native-ios/EditorIA/PersonSegmentationService.swift /Users/runner/work/CCA/CCA/native-ios/EditorIA/PickedMediaFile.swift /Users/runner/work/CCA/CCA/native-ios/EditorIA/ProjectModel.swift /Users/runner/work/CCA/CCA/native-ios/EditorIA/ProjectStore.swift /Users/runner/work/CCA/CCA/native-ios/EditorIA/SceneEvaluator.swift (in target 'EditorIA' from project 'EditorIASim')
+
+SwiftCompile normal arm64 /Users/runner/work/CCA/CCA/native-ios/EditorIA/LocalDirectorService.swift (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    
+
+SwiftCompile normal arm64 /Users/runner/work/CCA/CCA/native-ios/EditorIA/LocalLLM.swift (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    
+
+SwiftCompile normal arm64 /Users/runner/work/CCA/CCA/native-ios/EditorIA/LocalTranscriptionService.swift (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    
+
+SwiftCompile normal arm64 /Users/runner/work/CCA/CCA/native-ios/EditorIA/ModelManager.swift (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    
+
+SwiftCompile normal arm64 /Users/runner/work/CCA/CCA/native-ios/EditorIA/PersonSegmentationService.swift (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    
+
+SwiftCompile normal arm64 /Users/runner/work/CCA/CCA/native-ios/EditorIA/PickedMediaFile.swift (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    
+
+SwiftCompile normal arm64 /Users/runner/work/CCA/CCA/native-ios/EditorIA/ProjectModel.swift (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    
+
+SwiftCompile normal arm64 /Users/runner/work/CCA/CCA/native-ios/EditorIA/ProjectStore.swift (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    
+
+SwiftCompile normal arm64 /Users/runner/work/CCA/CCA/native-ios/EditorIA/SceneEvaluator.swift (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    
+
+LinkAssetCatalog /Users/runner/work/CCA/CCA/native-ios/EditorIA/Assets.xcassets (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    builtin-linkAssetCatalog --thinned /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/assetcatalog_output/thinned --thinned-dependencies /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/assetcatalog_dependencies_thinned --thinned-info-plist-content /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/assetcatalog_generated_info.plist_thinned --unthinned /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/assetcatalog_output/unthinned --unthinned-dependencies /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/assetcatalog_dependencies_unthinned --unthinned-info-plist-content /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/assetcatalog_generated_info.plist_unthinned --output /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app --plist-output /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/assetcatalog_generated_info.plist
+note: Emplaced /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app/AppIcon76x76@2x~ipad.png (in target 'EditorIA' from project 'EditorIASim')
+note: Emplaced /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app/AppIcon60x60@2x.png (in target 'EditorIA' from project 'EditorIASim')
+note: Emplaced /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app/Assets.car (in target 'EditorIA' from project 'EditorIASim')
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for EditorIA (in target 'EditorIA' from project 'EditorIASim')
+
+SwiftDriver\ Compilation\ Requirements EditorIA normal arm64 com.apple.xcode.tools.swift.compiler (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name EditorIA -Onone -enforce-exclusivity\=checked @/Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -target arm64-apple-ios17.0-simulator -g -module-cache-path /Users/runner/work/CCA/CCA/build-sim/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/runner/work/CCA/CCA/build-sim/Index.noindex/DataStore -swift-version 5 -I /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator -F /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/CCA/CCA/build-sim/SDKStatCaches.noindex/iphonesimulator18.5-22F76-96ae0914227b19deccb34b33ba7b5dea.sdkstatcache -output-file-map /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/CCA/CCA/build-sim/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA-generated-files.hmap -Xcc -I/Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA-own-target-headers.hmap -Xcc -I/Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA-project-headers.hmap -Xcc -I/Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA-Swift.h -working-directory /Users/runner/work/CCA/CCA -experimental-emit-module-separately -disable-cmo
+
+ProcessInfoPlistFile /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app/Info.plist /Users/runner/work/CCA/CCA/native-ios/Info.plist (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    builtin-infoPlistUtility /Users/runner/work/CCA/CCA/native-ios/Info.plist -producttype com.apple.product-type.application -genpkginfo /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app/PkgInfo -expandbuildsettings -format binary -platform iphonesimulator -additionalcontentfile /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/assetcatalog_generated_info.plist -o /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app/Info.plist
+
+SwiftMergeGeneratedHeaders /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/DerivedSources/EditorIA-Swift.h /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA-Swift.h (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    builtin-swiftHeaderTool -arch arm64 /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA-Swift.h -o /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/DerivedSources/EditorIA-Swift.h
+
+Copy /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA.swiftmodule (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA.swiftmodule /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.swiftmodule/arm64-apple-ios-simulator.swiftmodule
+
+Copy /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.swiftmodule/arm64-apple-ios-simulator.swiftdoc /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA.swiftdoc (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA.swiftdoc /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.swiftmodule/arm64-apple-ios-simulator.swiftdoc
+
+Copy /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.swiftmodule/arm64-apple-ios-simulator.abi.json /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA.abi.json (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA.abi.json /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.swiftmodule/arm64-apple-ios-simulator.abi.json
+
+Copy /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA.swiftsourceinfo (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA.swiftsourceinfo /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+
+SwiftCompile normal arm64 Compiling\ SmokeTest.swift,\ SoundDirectorService.swift,\ TimelineCore.swift,\ TimelinePlayback.swift,\ TimelineRenderer.swift,\ VideoPersonSegmentationService.swift,\ VisualAnalysisService.swift,\ WhisperService.swift,\ GeneratedAssetSymbols.swift /Users/runner/work/CCA/CCA/native-ios/EditorIA/SmokeTest.swift /Users/runner/work/CCA/CCA/native-ios/EditorIA/SoundDirectorService.swift /Users/runner/work/CCA/CCA/native-ios/EditorIA/TimelineCore.swift /Users/runner/work/CCA/CCA/native-ios/EditorIA/TimelinePlayback.swift /Users/runner/work/CCA/CCA/native-ios/EditorIA/TimelineRenderer.swift /Users/runner/work/CCA/CCA/native-ios/EditorIA/VideoPersonSegmentationService.swift /Users/runner/work/CCA/CCA/native-ios/EditorIA/VisualAnalysisService.swift /Users/runner/work/CCA/CCA/native-ios/EditorIA/WhisperService.swift /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'EditorIA' from project 'EditorIASim')
+
+SwiftCompile normal arm64 /Users/runner/work/CCA/CCA/native-ios/EditorIA/SmokeTest.swift (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    
+/Users/runner/work/CCA/CCA/native-ios/EditorIA/TimelineRenderer.swift:564:23: warning: capture of 'input' with non-sendable type 'AVAssetWriterInput' in a '@Sendable' closure
+                while input.isReadyForMoreMediaData {
+                      ^
+/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/System/Library/Frameworks/AVFoundation.framework/Headers/AVAssetWriterInput.h:43:12: note: class 'AVAssetWriterInput' does not conform to the 'Sendable' protocol
+@interface AVAssetWriterInput : NSObject
+           ^
+/Users/runner/work/CCA/CCA/native-ios/EditorIA/TimelineRenderer.swift:3:1: warning: add '@preconcurrency' to suppress 'Sendable'-related warnings from module 'AVFoundation'
+import AVFoundation
+^
+@preconcurrency 
+/Users/runner/work/CCA/CCA/native-ios/EditorIA/TimelineRenderer.swift:565:57: warning: capture of 'output' with non-sendable type 'AVAssetReaderOutput' in a '@Sendable' closure
+                    if !control.cancelled, let sample = output.copyNextSampleBuffer() {
+                                                        ^
+/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/System/Library/Frameworks/AVFoundation.framework/Headers/AVAssetReaderOutput.h:42:12: note: class 'AVAssetReaderOutput' does not conform to the 'Sendable' protocol
+@interface AVAssetReaderOutput : NSObject
+           ^
+
+SwiftCompile normal arm64 /Users/runner/work/CCA/CCA/native-ios/EditorIA/SoundDirectorService.swift (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    
+/Users/runner/work/CCA/CCA/native-ios/EditorIA/TimelineRenderer.swift:564:23: warning: capture of 'input' with non-sendable type 'AVAssetWriterInput' in a '@Sendable' closure
+                while input.isReadyForMoreMediaData {
+                      ^
+/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/System/Library/Frameworks/AVFoundation.framework/Headers/AVAssetWriterInput.h:43:12: note: class 'AVAssetWriterInput' does not conform to the 'Sendable' protocol
+@interface AVAssetWriterInput : NSObject
+           ^
+/Users/runner/work/CCA/CCA/native-ios/EditorIA/TimelineRenderer.swift:3:1: warning: add '@preconcurrency' to suppress 'Sendable'-related warnings from module 'AVFoundation'
+import AVFoundation
+^
+@preconcurrency 
+/Users/runner/work/CCA/CCA/native-ios/EditorIA/TimelineRenderer.swift:565:57: warning: capture of 'output' with non-sendable type 'AVAssetReaderOutput' in a '@Sendable' closure
+                    if !control.cancelled, let sample = output.copyNextSampleBuffer() {
+                                                        ^
+/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/System/Library/Frameworks/AVFoundation.framework/Headers/AVAssetReaderOutput.h:42:12: note: class 'AVAssetReaderOutput' does not conform to the 'Sendable' protocol
+@interface AVAssetReaderOutput : NSObject
+           ^
+
+SwiftCompile normal arm64 /Users/runner/work/CCA/CCA/native-ios/EditorIA/TimelineCore.swift (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    
+/Users/runner/work/CCA/CCA/native-ios/EditorIA/TimelineRenderer.swift:564:23: warning: capture of 'input' with non-sendable type 'AVAssetWriterInput' in a '@Sendable' closure
+                while input.isReadyForMoreMediaData {
+                      ^
+/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/System/Library/Frameworks/AVFoundation.framework/Headers/AVAssetWriterInput.h:43:12: note: class 'AVAssetWriterInput' does not conform to the 'Sendable' protocol
+@interface AVAssetWriterInput : NSObject
+           ^
+/Users/runner/work/CCA/CCA/native-ios/EditorIA/TimelineRenderer.swift:3:1: warning: add '@preconcurrency' to suppress 'Sendable'-related warnings from module 'AVFoundation'
+import AVFoundation
+^
+@preconcurrency 
+/Users/runner/work/CCA/CCA/native-ios/EditorIA/TimelineRenderer.swift:565:57: warning: capture of 'output' with non-sendable type 'AVAssetReaderOutput' in a '@Sendable' closure
+                    if !control.cancelled, let sample = output.copyNextSampleBuffer() {
+                                                        ^
+/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/System/Library/Frameworks/AVFoundation.framework/Headers/AVAssetReaderOutput.h:42:12: note: class 'AVAssetReaderOutput' does not conform to the 'Sendable' protocol
+@interface AVAssetReaderOutput : NSObject
+           ^
+
+SwiftCompile normal arm64 /Users/runner/work/CCA/CCA/native-ios/EditorIA/TimelinePlayback.swift (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    
+/Users/runner/work/CCA/CCA/native-ios/EditorIA/TimelineRenderer.swift:564:23: warning: capture of 'input' with non-sendable type 'AVAssetWriterInput' in a '@Sendable' closure
+                while input.isReadyForMoreMediaData {
+                      ^
+/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/System/Library/Frameworks/AVFoundation.framework/Headers/AVAssetWriterInput.h:43:12: note: class 'AVAssetWriterInput' does not conform to the 'Sendable' protocol
+@interface AVAssetWriterInput : NSObject
+           ^
+/Users/runner/work/CCA/CCA/native-ios/EditorIA/TimelineRenderer.swift:3:1: warning: add '@preconcurrency' to suppress 'Sendable'-related warnings from module 'AVFoundation'
+import AVFoundation
+^
+@preconcurrency 
+/Users/runner/work/CCA/CCA/native-ios/EditorIA/TimelineRenderer.swift:565:57: warning: capture of 'output' with non-sendable type 'AVAssetReaderOutput' in a '@Sendable' closure
+                    if !control.cancelled, let sample = output.copyNextSampleBuffer() {
+                                                        ^
+/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/System/Library/Frameworks/AVFoundation.framework/Headers/AVAssetReaderOutput.h:42:12: note: class 'AVAssetReaderOutput' does not conform to the 'Sendable' protocol
+@interface AVAssetReaderOutput : NSObject
+           ^
+
+SwiftCompile normal arm64 /Users/runner/work/CCA/CCA/native-ios/EditorIA/TimelineRenderer.swift (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    
+/Users/runner/work/CCA/CCA/native-ios/EditorIA/TimelineRenderer.swift:564:23: warning: capture of 'input' with non-sendable type 'AVAssetWriterInput' in a '@Sendable' closure
+                while input.isReadyForMoreMediaData {
+                      ^
+/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/System/Library/Frameworks/AVFoundation.framework/Headers/AVAssetWriterInput.h:43:12: note: class 'AVAssetWriterInput' does not conform to the 'Sendable' protocol
+@interface AVAssetWriterInput : NSObject
+           ^
+/Users/runner/work/CCA/CCA/native-ios/EditorIA/TimelineRenderer.swift:3:1: warning: add '@preconcurrency' to suppress 'Sendable'-related warnings from module 'AVFoundation'
+import AVFoundation
+^
+@preconcurrency 
+/Users/runner/work/CCA/CCA/native-ios/EditorIA/TimelineRenderer.swift:565:57: warning: capture of 'output' with non-sendable type 'AVAssetReaderOutput' in a '@Sendable' closure
+                    if !control.cancelled, let sample = output.copyNextSampleBuffer() {
+                                                        ^
+/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/System/Library/Frameworks/AVFoundation.framework/Headers/AVAssetReaderOutput.h:42:12: note: class 'AVAssetReaderOutput' does not conform to the 'Sendable' protocol
+@interface AVAssetReaderOutput : NSObject
+           ^
+
+SwiftCompile normal arm64 /Users/runner/work/CCA/CCA/native-ios/EditorIA/VideoPersonSegmentationService.swift (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    
+/Users/runner/work/CCA/CCA/native-ios/EditorIA/TimelineRenderer.swift:564:23: warning: capture of 'input' with non-sendable type 'AVAssetWriterInput' in a '@Sendable' closure
+                while input.isReadyForMoreMediaData {
+                      ^
+/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/System/Library/Frameworks/AVFoundation.framework/Headers/AVAssetWriterInput.h:43:12: note: class 'AVAssetWriterInput' does not conform to the 'Sendable' protocol
+@interface AVAssetWriterInput : NSObject
+           ^
+/Users/runner/work/CCA/CCA/native-ios/EditorIA/TimelineRenderer.swift:3:1: warning: add '@preconcurrency' to suppress 'Sendable'-related warnings from module 'AVFoundation'
+import AVFoundation
+^
+@preconcurrency 
+/Users/runner/work/CCA/CCA/native-ios/EditorIA/TimelineRenderer.swift:565:57: warning: capture of 'output' with non-sendable type 'AVAssetReaderOutput' in a '@Sendable' closure
+                    if !control.cancelled, let sample = output.copyNextSampleBuffer() {
+                                                        ^
+/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/System/Library/Frameworks/AVFoundation.framework/Headers/AVAssetReaderOutput.h:42:12: note: class 'AVAssetReaderOutput' does not conform to the 'Sendable' protocol
+@interface AVAssetReaderOutput : NSObject
+           ^
+
+SwiftCompile normal arm64 /Users/runner/work/CCA/CCA/native-ios/EditorIA/VisualAnalysisService.swift (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    
+/Users/runner/work/CCA/CCA/native-ios/EditorIA/TimelineRenderer.swift:564:23: warning: capture of 'input' with non-sendable type 'AVAssetWriterInput' in a '@Sendable' closure
+                while input.isReadyForMoreMediaData {
+                      ^
+/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/System/Library/Frameworks/AVFoundation.framework/Headers/AVAssetWriterInput.h:43:12: note: class 'AVAssetWriterInput' does not conform to the 'Sendable' protocol
+@interface AVAssetWriterInput : NSObject
+           ^
+/Users/runner/work/CCA/CCA/native-ios/EditorIA/TimelineRenderer.swift:3:1: warning: add '@preconcurrency' to suppress 'Sendable'-related warnings from module 'AVFoundation'
+import AVFoundation
+^
+@preconcurrency 
+/Users/runner/work/CCA/CCA/native-ios/EditorIA/TimelineRenderer.swift:565:57: warning: capture of 'output' with non-sendable type 'AVAssetReaderOutput' in a '@Sendable' closure
+                    if !control.cancelled, let sample = output.copyNextSampleBuffer() {
+                                                        ^
+/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/System/Library/Frameworks/AVFoundation.framework/Headers/AVAssetReaderOutput.h:42:12: note: class 'AVAssetReaderOutput' does not conform to the 'Sendable' protocol
+@interface AVAssetReaderOutput : NSObject
+           ^
+
+SwiftCompile normal arm64 /Users/runner/work/CCA/CCA/native-ios/EditorIA/WhisperService.swift (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    
+/Users/runner/work/CCA/CCA/native-ios/EditorIA/TimelineRenderer.swift:564:23: warning: capture of 'input' with non-sendable type 'AVAssetWriterInput' in a '@Sendable' closure
+                while input.isReadyForMoreMediaData {
+                      ^
+/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/System/Library/Frameworks/AVFoundation.framework/Headers/AVAssetWriterInput.h:43:12: note: class 'AVAssetWriterInput' does not conform to the 'Sendable' protocol
+@interface AVAssetWriterInput : NSObject
+           ^
+/Users/runner/work/CCA/CCA/native-ios/EditorIA/TimelineRenderer.swift:3:1: warning: add '@preconcurrency' to suppress 'Sendable'-related warnings from module 'AVFoundation'
+import AVFoundation
+^
+@preconcurrency 
+/Users/runner/work/CCA/CCA/native-ios/EditorIA/TimelineRenderer.swift:565:57: warning: capture of 'output' with non-sendable type 'AVAssetReaderOutput' in a '@Sendable' closure
+                    if !control.cancelled, let sample = output.copyNextSampleBuffer() {
+                                                        ^
+/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/System/Library/Frameworks/AVFoundation.framework/Headers/AVAssetReaderOutput.h:42:12: note: class 'AVAssetReaderOutput' does not conform to the 'Sendable' protocol
+@interface AVAssetReaderOutput : NSObject
+           ^
+
+SwiftCompile normal arm64 /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    
+/Users/runner/work/CCA/CCA/native-ios/EditorIA/TimelineRenderer.swift:564:23: warning: capture of 'input' with non-sendable type 'AVAssetWriterInput' in a '@Sendable' closure
+                while input.isReadyForMoreMediaData {
+                      ^
+/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/System/Library/Frameworks/AVFoundation.framework/Headers/AVAssetWriterInput.h:43:12: note: class 'AVAssetWriterInput' does not conform to the 'Sendable' protocol
+@interface AVAssetWriterInput : NSObject
+           ^
+/Users/runner/work/CCA/CCA/native-ios/EditorIA/TimelineRenderer.swift:3:1: warning: add '@preconcurrency' to suppress 'Sendable'-related warnings from module 'AVFoundation'
+import AVFoundation
+^
+@preconcurrency 
+/Users/runner/work/CCA/CCA/native-ios/EditorIA/TimelineRenderer.swift:565:57: warning: capture of 'output' with non-sendable type 'AVAssetReaderOutput' in a '@Sendable' closure
+                    if !control.cancelled, let sample = output.copyNextSampleBuffer() {
+                                                        ^
+/Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk/System/Library/Frameworks/AVFoundation.framework/Headers/AVAssetReaderOutput.h:42:12: note: class 'AVAssetReaderOutput' does not conform to the 'Sendable' protocol
+@interface AVAssetReaderOutput : NSObject
+           ^
+
+SwiftDriverJobDiscovery normal arm64 Compiling SmokeTest.swift, SoundDirectorService.swift, TimelineCore.swift, TimelinePlayback.swift, TimelineRenderer.swift, VideoPersonSegmentationService.swift, VisualAnalysisService.swift, WhisperService.swift, GeneratedAssetSymbols.swift (in target 'EditorIA' from project 'EditorIASim')
+
+SwiftDriverJobDiscovery normal arm64 Compiling LocalDirectorService.swift, LocalLLM.swift, LocalTranscriptionService.swift, ModelManager.swift, PersonSegmentationService.swift, PickedMediaFile.swift, ProjectModel.swift, ProjectStore.swift, SceneEvaluator.swift (in target 'EditorIA' from project 'EditorIASim')
+
+SwiftDriverJobDiscovery normal arm64 Compiling AgentCore.swift, AudioDuckingPlanner.swift, CaptionPresets.swift, ContentView.swift, DirectorPlanningCore.swift, DirectorTimelineMaterializer.swift, EditorIAApp.swift, EditorPanels.swift, FrameCompositor.swift, LocalAudioAnalysisService.swift (in target 'EditorIA' from project 'EditorIASim')
+
+SwiftDriver\ Compilation EditorIA normal arm64 com.apple.xcode.tools.swift.compiler (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    builtin-Swift-Compilation -- /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name EditorIA -Onone -enforce-exclusivity\=checked @/Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -target arm64-apple-ios17.0-simulator -g -module-cache-path /Users/runner/work/CCA/CCA/build-sim/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/runner/work/CCA/CCA/build-sim/Index.noindex/DataStore -swift-version 5 -I /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator -F /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/CCA/CCA/build-sim/SDKStatCaches.noindex/iphonesimulator18.5-22F76-96ae0914227b19deccb34b33ba7b5dea.sdkstatcache -output-file-map /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/CCA/CCA/build-sim/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA-generated-files.hmap -Xcc -I/Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA-own-target-headers.hmap -Xcc -I/Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA-project-headers.hmap -Xcc -I/Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA-Swift.h -working-directory /Users/runner/work/CCA/CCA -experimental-emit-module-separately -disable-cmo
+
+Ld /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app/EditorIA.debug.dylib normal (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios17.0-simulator -dynamiclib -isysroot /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -O0 -L/Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator -F/Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator -filelist /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA.LinkFileList -install_name @rpath/EditorIA.debug.dylib -Xlinker -rpath -Xlinker @executable_path/Frameworks -dead_strip -Xlinker -object_path_lto -Xlinker /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA.swiftmodule -Xlinker -alias -Xlinker _main -Xlinker ___debug_main_executable_dylib_entry_point -o /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app/EditorIA.debug.dylib
+
+ConstructStubExecutorLinkFileList /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA-ExecutorLinkFileList-normal-arm64.txt (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    construct-stub-executor-link-file-list /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app/EditorIA.debug.dylib /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor_no_swift_entry_point.a /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor.a --output /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA-ExecutorLinkFileList-normal-arm64.txt
+note: Using stub executor library with Swift entry point. (in target 'EditorIA' from project 'EditorIASim')
+
+Ld /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app/EditorIA normal (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios17.0-simulator -isysroot /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk -O0 -L/Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator -F/Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator -Xlinker -rpath -Xlinker @executable_path -Xlinker -rpath -Xlinker @executable_path/Frameworks -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -e ___debug_blank_executor_main -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_dylib -Xlinker /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA-DebugDylibPath-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_instlnm -Xlinker /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA-DebugDylibInstallName-normal-arm64.txt -Xlinker -filelist -Xlinker /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA-ExecutorLinkFileList-normal-arm64.txt /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app/EditorIA.debug.dylib -o /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app/EditorIA
+
+ExtractAppIntentsMetadata (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --module-name EditorIA --sdk-root /Applications/Xcode_16.4.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.5.sdk --xcode-version 16F6 --platform-family iOS --deployment-target 17.0 --bundle-identifier com.criativar.editoria --output /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app --target-triple arm64-apple-ios17.0-simulator --binary-file /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app/EditorIA --dependency-file /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA_dependency_info.dat --stringsdata-file /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA.SwiftFileList --metadata-file-list /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA.DependencyMetadataFileList --static-metadata-file-list /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA.DependencyStaticMetadataFileList --swift-const-vals-list /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/Objects-normal/arm64/EditorIA.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-11-03 05:19:15.053 appintentsmetadataprocessor[9449:31021] Starting appintentsmetadataprocessor export
+2026-11-03 05:19:15.055 appintentsmetadataprocessor[9449:31021] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+
+CopySwiftLibs /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app/EditorIA.debug.dylib --scan-folder /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app/Frameworks --scan-folder /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app/PlugIns --scan-folder /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app/SystemExtensions --scan-folder /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app/Extensions --platform iphonesimulator --toolchain /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+Ignoring --strip-bitcode because --sign was not passed
+
+AppIntentsSSUTraining (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    /Applications/Xcode_16.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app/Info.plist --temp-dir-path /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/ssu --bundle-id com.criativar.editoria --product-path /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app --extracted-metadata-path /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app/Metadata.appintents --metadata-file-list /Users/runner/work/CCA/CCA/build-sim/Build/Intermediates.noindex/EditorIASim.build/Debug-iphonesimulator/EditorIA.build/EditorIA.DependencyMetadataFileList --archive-ssu-assets
+2026-11-03 05:19:15.076 appintentsnltrainingprocessor[9462:31054] Parsing options for appintentsnltrainingprocessor
+2026-11-03 05:19:15.077 appintentsnltrainingprocessor[9462:31054] No AppShortcuts found - Skipping.
+
+RegisterExecutionPolicyException /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    builtin-RegisterExecutionPolicyException /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app
+
+Validate /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    builtin-validationUtility /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app -infoplist-subpath Info.plist
+
+Touch /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app (in target 'EditorIA' from project 'EditorIASim')
+    cd /Users/runner/work/CCA/CCA
+    /usr/bin/touch -c /Users/runner/work/CCA/CCA/build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app
+
+** BUILD SUCCEEDED **
+

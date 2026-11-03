@@ -1,0 +1,1226 @@
++ mkdir -p smoke
++ python3 -
++ xcodegen generate --spec project-sim.yml
+⚙️  Generating plists...
+⚙️  Generating project...
+⚙️  Writing project...
+Created project at /Users/runner/work/CCA/CCA/EditorIASim.xcodeproj
++ xcodebuild -project EditorIASim.xcodeproj -scheme EditorIA -configuration Debug -destination 'generic/platform=iOS Simulator' -derivedDataPath build-sim ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO build
++ grep -E 'error:|BUILD (SUCCEEDED|FAILED)' build-sim.log
++ sort -u
++ tee smoke/sim-erros.txt
+** BUILD SUCCEEDED **
++ APP=build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app
++ test -f build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app/EditorIA
++ run_device 'iPhone 1[0-9]' iphone 1
++ NAME_MATCH='iPhone 1[0-9]'
++ TAG=iphone
++ SMOKE=1
++ shift 3
+++ xcrun simctl list devices available
+++ grep -m1 -E 'iPhone 1[0-9]'
+++ sed -E 's/.*\(([0-9A-F-]{36})\).*/\1/'
++ DEVICE=15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D
++ xcrun simctl boot 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D
++ xcrun simctl bootstatus 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D -b
++ xcrun simctl install 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app
++ xcrun simctl privacy 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D grant all com.criativar.editoria
++ xcrun simctl status_bar 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D override --time 9:41
++ '[' 1 = 1 ']'
++ CONSOLE=12182
++ SIMCTL_CHILD_EDITORIA_SMOKE=1
++ xcrun simctl launch --console-pty --terminate-running-process 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria
+++ seq 1 270
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ sleep 5
++ for i in '$(seq 1 270)'
+++ xcrun simctl get_app_container 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria data
++ DATA=/Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5
++ test -f /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/report.json
++ break
++ kill 12182
++ cp -R /Users/runner/Library/Developer/CoreSimulator/Devices/15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D/data/Containers/Data/Application/C8E79030-CEDB-4827-A6FD-A8781A6492E5/Documents/Smoke/ smoke/iphone/
++ xcrun simctl terminate 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria
+An error was encountered processing the command (domain=NSPOSIXErrorDomain, code=3):
+Simulator device failed to terminate com.criativar.editoria.
+found nothing to terminate
+Underlying error (domain=NSPOSIXErrorDomain, code=3):
+	The request to terminate "com.criativar.editoria" failed. found nothing to terminate
+	found nothing to terminate
++ for PANEL in '""' '"Chat"' '"Montagem"' '"Clipe"' '"Mídia"' '"Legendas"' '"Áudio"' '"Cor"' '"Perfis"'
+++ echo principal
+++ tr -d ' '
+++ iconv -f utf8 -t ascii//TRANSLIT
+++ tr -d ''\''`^~'
++ FILE=principal
++ SIMCTL_CHILD_EDITORIA_OPEN=
++ xcrun simctl launch --terminate-running-process 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria
+com.criativar.editoria: 68656
++ sleep 7
++ xcrun simctl io 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D screenshot smoke/iphone-principal.png
+Detected file type 'PNG' from extension
+Wrote screenshot to: smoke/iphone-principal.png
++ xcrun simctl spawn 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D launchctl list
++ grep -q com.criativar.editoria
++ for PANEL in '""' '"Chat"' '"Montagem"' '"Clipe"' '"Mídia"' '"Legendas"' '"Áudio"' '"Cor"' '"Perfis"'
+++ echo Chat
+++ tr -d ' '
+++ iconv -f utf8 -t ascii//TRANSLIT
+++ tr -d ''\''`^~'
++ FILE=Chat
++ SIMCTL_CHILD_EDITORIA_OPEN=Chat
++ xcrun simctl launch --terminate-running-process 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria
+com.criativar.editoria: 69193
++ sleep 7
++ xcrun simctl io 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D screenshot smoke/iphone-Chat.png
+Detected file type 'PNG' from extension
+Wrote screenshot to: smoke/iphone-Chat.png
++ xcrun simctl spawn 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D launchctl list
++ grep -q com.criativar.editoria
++ for PANEL in '""' '"Chat"' '"Montagem"' '"Clipe"' '"Mídia"' '"Legendas"' '"Áudio"' '"Cor"' '"Perfis"'
+++ tr -d ' '
+++ echo Montagem
+++ iconv -f utf8 -t ascii//TRANSLIT
+++ tr -d ''\''`^~'
++ FILE=Montagem
++ SIMCTL_CHILD_EDITORIA_OPEN=Montagem
++ xcrun simctl launch --terminate-running-process 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria
+com.criativar.editoria: 69808
++ sleep 7
++ xcrun simctl io 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D screenshot smoke/iphone-Montagem.png
+Detected file type 'PNG' from extension
+Wrote screenshot to: smoke/iphone-Montagem.png
++ xcrun simctl spawn 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D launchctl list
++ grep -q com.criativar.editoria
+Child process terminated with signal 13: Broken pipe
++ for PANEL in '""' '"Chat"' '"Montagem"' '"Clipe"' '"Mídia"' '"Legendas"' '"Áudio"' '"Cor"' '"Perfis"'
+++ echo Clipe
+++ iconv -f utf8 -t ascii//TRANSLIT
+++ tr -d ' '
+++ tr -d ''\''`^~'
++ FILE=Clipe
++ SIMCTL_CHILD_EDITORIA_OPEN=Clipe
++ xcrun simctl launch --terminate-running-process 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria
+com.criativar.editoria: 70576
++ sleep 7
++ xcrun simctl io 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D screenshot smoke/iphone-Clipe.png
+Detected file type 'PNG' from extension
+Wrote screenshot to: smoke/iphone-Clipe.png
++ grep -q com.criativar.editoria
++ xcrun simctl spawn 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D launchctl list
++ for PANEL in '""' '"Chat"' '"Montagem"' '"Clipe"' '"Mídia"' '"Legendas"' '"Áudio"' '"Cor"' '"Perfis"'
+++ echo $'M�\255dia'
+++ tr -d ' '
+++ iconv -f utf8 -t ascii//TRANSLIT
+++ tr -d ''\''`^~'
+iconv: warning: invalid characters: 1
++ FILE=Midia
++ SIMCTL_CHILD_EDITORIA_OPEN=$'M�\255dia'
++ xcrun simctl launch --terminate-running-process 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria
+com.criativar.editoria: 70779
++ sleep 7
++ xcrun simctl io 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D screenshot smoke/iphone-Midia.png
+Detected file type 'PNG' from extension
+Wrote screenshot to: smoke/iphone-Midia.png
++ xcrun simctl spawn 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D launchctl list
++ grep -q com.criativar.editoria
++ for PANEL in '""' '"Chat"' '"Montagem"' '"Clipe"' '"Mídia"' '"Legendas"' '"Áudio"' '"Cor"' '"Perfis"'
+++ echo Legendas
+++ iconv -f utf8 -t ascii//TRANSLIT
+++ tr -d ' '
+++ tr -d ''\''`^~'
++ FILE=Legendas
++ SIMCTL_CHILD_EDITORIA_OPEN=Legendas
++ xcrun simctl launch --terminate-running-process 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria
+com.criativar.editoria: 71384
++ sleep 7
++ xcrun simctl io 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D screenshot smoke/iphone-Legendas.png
+Detected file type 'PNG' from extension
+Wrote screenshot to: smoke/iphone-Legendas.png
++ xcrun simctl spawn 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D launchctl list
++ grep -q com.criativar.editoria
++ for PANEL in '""' '"Chat"' '"Montagem"' '"Clipe"' '"Mídia"' '"Legendas"' '"Áudio"' '"Cor"' '"Perfis"'
+++ iconv -f utf8 -t ascii//TRANSLIT
+++ echo $'�\201udio'
+++ tr -d ' '
+++ tr -d ''\''`^~'
+iconv: warning: invalid characters: 1
++ FILE=Audio
++ SIMCTL_CHILD_EDITORIA_OPEN=$'�\201udio'
++ xcrun simctl launch --terminate-running-process 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria
+com.criativar.editoria: 72133
++ sleep 7
++ xcrun simctl io 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D screenshot smoke/iphone-Audio.png
+Detected file type 'PNG' from extension
+Wrote screenshot to: smoke/iphone-Audio.png
++ xcrun simctl spawn 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D launchctl list
++ grep -q com.criativar.editoria
++ for PANEL in '""' '"Chat"' '"Montagem"' '"Clipe"' '"Mídia"' '"Legendas"' '"Áudio"' '"Cor"' '"Perfis"'
+++ tr -d ' '
+++ echo Cor
+++ iconv -f utf8 -t ascii//TRANSLIT
+++ tr -d ''\''`^~'
++ FILE=Cor
++ SIMCTL_CHILD_EDITORIA_OPEN=Cor
++ xcrun simctl launch --terminate-running-process 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria
+com.criativar.editoria: 72435
++ sleep 7
++ xcrun simctl io 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D screenshot smoke/iphone-Cor.png
+Detected file type 'PNG' from extension
+Wrote screenshot to: smoke/iphone-Cor.png
++ xcrun simctl spawn 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D launchctl list
++ grep -q com.criativar.editoria
++ for PANEL in '""' '"Chat"' '"Montagem"' '"Clipe"' '"Mídia"' '"Legendas"' '"Áudio"' '"Cor"' '"Perfis"'
+++ echo Perfis
+++ tr -d ' '
+++ iconv -f utf8 -t ascii//TRANSLIT
+++ tr -d ''\''`^~'
++ FILE=Perfis
++ SIMCTL_CHILD_EDITORIA_OPEN=Perfis
++ xcrun simctl launch --terminate-running-process 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D com.criativar.editoria
+com.criativar.editoria: 73368
++ sleep 7
++ xcrun simctl io 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D screenshot smoke/iphone-Perfis.png
+Detected file type 'PNG' from extension
+Wrote screenshot to: smoke/iphone-Perfis.png
++ xcrun simctl spawn 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D launchctl list
++ grep -q com.criativar.editoria
++ xcrun simctl shutdown 15FAB4A1-2F41-4DFB-B3E0-FB0C9936253D
++ run_device iPad ipad 0
++ NAME_MATCH=iPad
++ TAG=ipad
++ SMOKE=0
++ shift 3
+++ xcrun simctl list devices available
+++ grep -m1 -E iPad
+++ sed -E 's/.*\(([0-9A-F-]{36})\).*/\1/'
++ DEVICE=C9D0D65F-D295-492F-AC87-69E7811EDB5D
++ xcrun simctl boot C9D0D65F-D295-492F-AC87-69E7811EDB5D
++ xcrun simctl bootstatus C9D0D65F-D295-492F-AC87-69E7811EDB5D -b
++ xcrun simctl install C9D0D65F-D295-492F-AC87-69E7811EDB5D build-sim/Build/Products/Debug-iphonesimulator/EditorIA.app
++ xcrun simctl privacy C9D0D65F-D295-492F-AC87-69E7811EDB5D grant all com.criativar.editoria
++ xcrun simctl status_bar C9D0D65F-D295-492F-AC87-69E7811EDB5D override --time 9:41
++ '[' 0 = 1 ']'
++ for PANEL in '""' '"Chat"' '"Montagem"' '"Clipe"' '"Mídia"' '"Legendas"' '"Áudio"' '"Cor"' '"Perfis"'
+++ echo principal
+++ tr -d ' '
+++ iconv -f utf8 -t ascii//TRANSLIT
+++ tr -d ''\''`^~'
++ FILE=principal
++ SIMCTL_CHILD_EDITORIA_OPEN=
++ xcrun simctl launch --terminate-running-process C9D0D65F-D295-492F-AC87-69E7811EDB5D com.criativar.editoria
+com.criativar.editoria: 76887
++ sleep 7
++ xcrun simctl io C9D0D65F-D295-492F-AC87-69E7811EDB5D screenshot smoke/ipad-principal.png
+Detected file type 'PNG' from extension
+Wrote screenshot to: smoke/ipad-principal.png
++ xcrun simctl spawn C9D0D65F-D295-492F-AC87-69E7811EDB5D launchctl list
++ grep -q com.criativar.editoria
++ for PANEL in '""' '"Chat"' '"Montagem"' '"Clipe"' '"Mídia"' '"Legendas"' '"Áudio"' '"Cor"' '"Perfis"'
+++ echo Chat
+++ tr -d ' '
+++ iconv -f utf8 -t ascii//TRANSLIT
+++ tr -d ''\''`^~'
++ FILE=Chat
++ SIMCTL_CHILD_EDITORIA_OPEN=Chat
++ xcrun simctl launch --terminate-running-process C9D0D65F-D295-492F-AC87-69E7811EDB5D com.criativar.editoria
+com.criativar.editoria: 77583
++ sleep 7
++ xcrun simctl io C9D0D65F-D295-492F-AC87-69E7811EDB5D screenshot smoke/ipad-Chat.png
+Detected file type 'PNG' from extension
+Wrote screenshot to: smoke/ipad-Chat.png
++ xcrun simctl spawn C9D0D65F-D295-492F-AC87-69E7811EDB5D launchctl list
++ grep -q com.criativar.editoria
++ for PANEL in '""' '"Chat"' '"Montagem"' '"Clipe"' '"Mídia"' '"Legendas"' '"Áudio"' '"Cor"' '"Perfis"'
+++ echo Montagem
+++ tr -d ' '
+++ iconv -f utf8 -t ascii//TRANSLIT
+++ tr -d ''\''`^~'
++ FILE=Montagem
++ SIMCTL_CHILD_EDITORIA_OPEN=Montagem
++ xcrun simctl launch --terminate-running-process C9D0D65F-D295-492F-AC87-69E7811EDB5D com.criativar.editoria
+com.criativar.editoria: 78254
++ sleep 7
++ xcrun simctl io C9D0D65F-D295-492F-AC87-69E7811EDB5D screenshot smoke/ipad-Montagem.png
+Detected file type 'PNG' from extension
+Wrote screenshot to: smoke/ipad-Montagem.png
++ xcrun simctl spawn C9D0D65F-D295-492F-AC87-69E7811EDB5D launchctl list
++ grep -q com.criativar.editoria
++ for PANEL in '""' '"Chat"' '"Montagem"' '"Clipe"' '"Mídia"' '"Legendas"' '"Áudio"' '"Cor"' '"Perfis"'
+++ echo Clipe
+++ tr -d ' '
+++ iconv -f utf8 -t ascii//TRANSLIT
+++ tr -d ''\''`^~'
++ FILE=Clipe
++ SIMCTL_CHILD_EDITORIA_OPEN=Clipe
++ xcrun simctl launch --terminate-running-process C9D0D65F-D295-492F-AC87-69E7811EDB5D com.criativar.editoria
+com.criativar.editoria: 78409
++ sleep 7
++ xcrun simctl io C9D0D65F-D295-492F-AC87-69E7811EDB5D screenshot smoke/ipad-Clipe.png
+Detected file type 'PNG' from extension
+Wrote screenshot to: smoke/ipad-Clipe.png
++ xcrun simctl spawn C9D0D65F-D295-492F-AC87-69E7811EDB5D launchctl list
++ grep -q com.criativar.editoria
++ for PANEL in '""' '"Chat"' '"Montagem"' '"Clipe"' '"Mídia"' '"Legendas"' '"Áudio"' '"Cor"' '"Perfis"'
+++ echo $'M�\255dia'
+++ tr -d ' '
+++ iconv -f utf8 -t ascii//TRANSLIT
+++ tr -d ''\''`^~'
+iconv: warning: invalid characters: 1
++ FILE=Midia
++ SIMCTL_CHILD_EDITORIA_OPEN=$'M�\255dia'
++ xcrun simctl launch --terminate-running-process C9D0D65F-D295-492F-AC87-69E7811EDB5D com.criativar.editoria
+com.criativar.editoria: 79025
++ sleep 7
++ xcrun simctl io C9D0D65F-D295-492F-AC87-69E7811EDB5D screenshot smoke/ipad-Midia.png
+Detected file type 'PNG' from extension
+Wrote screenshot to: smoke/ipad-Midia.png
++ xcrun simctl spawn C9D0D65F-D295-492F-AC87-69E7811EDB5D launchctl list
++ grep -q com.criativar.editoria
++ for PANEL in '""' '"Chat"' '"Montagem"' '"Clipe"' '"Mídia"' '"Legendas"' '"Áudio"' '"Cor"' '"Perfis"'
+++ echo Legendas
+++ tr -d ' '
+++ iconv -f utf8 -t ascii//TRANSLIT
+++ tr -d ''\''`^~'
++ FILE=Legendas
++ SIMCTL_CHILD_EDITORIA_OPEN=Legendas
++ xcrun simctl launch --terminate-running-process C9D0D65F-D295-492F-AC87-69E7811EDB5D com.criativar.editoria
+com.criativar.editoria: 80152
++ sleep 7
++ xcrun simctl io C9D0D65F-D295-492F-AC87-69E7811EDB5D screenshot smoke/ipad-Legendas.png
+Detected file type 'PNG' from extension
+Wrote screenshot to: smoke/ipad-Legendas.png
++ xcrun simctl spawn C9D0D65F-D295-492F-AC87-69E7811EDB5D launchctl list
++ grep -q com.criativar.editoria
++ for PANEL in '""' '"Chat"' '"Montagem"' '"Clipe"' '"Mídia"' '"Legendas"' '"Áudio"' '"Cor"' '"Perfis"'
+++ echo $'�\201udio'
+++ tr -d ' '
+++ iconv -f utf8 -t ascii//TRANSLIT
+++ tr -d ''\''`^~'
+iconv: warning: invalid characters: 1
++ FILE=Audio
++ SIMCTL_CHILD_EDITORIA_OPEN=$'�\201udio'
++ xcrun simctl launch --terminate-running-process C9D0D65F-D295-492F-AC87-69E7811EDB5D com.criativar.editoria
+com.criativar.editoria: 81105
++ sleep 7
++ xcrun simctl io C9D0D65F-D295-492F-AC87-69E7811EDB5D screenshot smoke/ipad-Audio.png
+Detected file type 'PNG' from extension
+Wrote screenshot to: smoke/ipad-Audio.png
++ xcrun simctl spawn C9D0D65F-D295-492F-AC87-69E7811EDB5D launchctl list
++ grep -q com.criativar.editoria
++ for PANEL in '""' '"Chat"' '"Montagem"' '"Clipe"' '"Mídia"' '"Legendas"' '"Áudio"' '"Cor"' '"Perfis"'
+++ echo Cor
+++ tr -d ' '
+++ iconv -f utf8 -t ascii//TRANSLIT
+++ tr -d ''\''`^~'
++ FILE=Cor
++ SIMCTL_CHILD_EDITORIA_OPEN=Cor
++ xcrun simctl launch --terminate-running-process C9D0D65F-D295-492F-AC87-69E7811EDB5D com.criativar.editoria
+com.criativar.editoria: 81814
++ sleep 7
++ xcrun simctl io C9D0D65F-D295-492F-AC87-69E7811EDB5D screenshot smoke/ipad-Cor.png
+Detected file type 'PNG' from extension
+Wrote screenshot to: smoke/ipad-Cor.png
++ xcrun simctl spawn C9D0D65F-D295-492F-AC87-69E7811EDB5D launchctl list
++ grep -q com.criativar.editoria
++ for PANEL in '""' '"Chat"' '"Montagem"' '"Clipe"' '"Mídia"' '"Legendas"' '"Áudio"' '"Cor"' '"Perfis"'
+++ echo Perfis
+++ tr -d ' '
+++ iconv -f utf8 -t ascii//TRANSLIT
+++ tr -d ''\''`^~'
++ FILE=Perfis
++ SIMCTL_CHILD_EDITORIA_OPEN=Perfis
++ xcrun simctl launch --terminate-running-process C9D0D65F-D295-492F-AC87-69E7811EDB5D com.criativar.editoria
+com.criativar.editoria: 82419
++ sleep 7
++ xcrun simctl io C9D0D65F-D295-492F-AC87-69E7811EDB5D screenshot smoke/ipad-Perfis.png
+Detected file type 'PNG' from extension
+Wrote screenshot to: smoke/ipad-Perfis.png
++ xcrun simctl spawn C9D0D65F-D295-492F-AC87-69E7811EDB5D launchctl list
++ grep -q com.criativar.editoria
++ xcrun simctl shutdown C9D0D65F-D295-492F-AC87-69E7811EDB5D
++ ls -R smoke
++ head -60
+ipad-Audio.png
+ipad-Chat.png
+ipad-Clipe.png
+ipad-Cor.png
+ipad-Legendas.png
+ipad-Midia.png
+ipad-Montagem.png
+ipad-Perfis.png
+ipad-principal.png
+iphone
+iphone-Audio.png
+iphone-Chat.png
+iphone-Clipe.png
+iphone-console.log
+iphone-Cor.png
+iphone-Legendas.png
+iphone-Midia.png
+iphone-Montagem.png
+iphone-Perfis.png
+iphone-principal.png
+run.log
+sim-erros.txt
+
+smoke/iphone:
+h-azul.png
+h-foto.png
+h-texto.png
+h-transicao.png
+h-vermelho.png
+hevc.png
+legendas
+lut.png
+parcial.json
+report.json
+saturacao.png
+v-vermelho.png
+
+smoke/iphone/legendas:
+balanco.jpg
+bloco.jpg
+bolha.jpg
+box.jpg
+caderno.jpg
+caneta.jpg
+cinema.jpg
+corte-seco.jpg
+desenho.jpg
+dois-mundos.jpg
+editorial.jpg
+elegante.jpg
+emoji-viral.jpg
+esticado.jpg
+foco.jpg
+fogo.jpg
+gigante.jpg
+giro.jpg
+glitch.jpg
+hormozi-classico.jpg
+hormozi.jpg
+inst-cor.jpg
