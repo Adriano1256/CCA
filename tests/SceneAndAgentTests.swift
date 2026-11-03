@@ -198,7 +198,7 @@ enum SceneAndAgentTests {
     }
 
     static func promptFormats() {
-        precondition(AgentProtocol.formatPrompt(system: "s", user: "u", format: .gemma).hasSuffix("<|turn>model\n<|channel>thought\n<channel|>"), "Gemma sem raciocínio")
+        precondition(AgentProtocol.formatPrompt(system: "s", user: "u", format: .gemma).hasSuffix("<|turn>user\nu<turn|>\n<|turn>model\n"), "Gemma no formato oficial, sem raciocínio")
         precondition(AgentProtocol.formatPrompt(system: "s", user: "u", format: .qwen).hasSuffix("<think>\n\n</think>\n\n"), "Qwen sem raciocínio")
     }
 
@@ -460,6 +460,23 @@ enum SceneAndAgentTests {
         precondition(RuleAgent.plan(for: "tira o som do b-roll", project: project)?.actions.first?.track == "broll", "B-roll")
         precondition(RuleAgent.plan(for: "exporta", project: project)?.actions.first?.tool == "export", "Exportar")
         precondition(RuleAgent.plan(for: "qual o sentido da vida", project: project) == nil, "Não finge que entendeu")
+        let trim = RuleAgent.plan(for: "Corta os 3 primeiros segundos do clipe 1", project: project)?.actions.first
+        precondition(trim?.tool == "trim_start" && trim?.clip == 1 && trim?.value == 3, "Corte no início")
+        let title = RuleAgent.plan(for: "Coloca o título Asfalto Novo no início com efeito de impacto", project: project)?.actions.first
+        precondition(title?.tool == "add_text" && title?.text == "Asfalto Novo" && title?.time == 0 && title?.kind == "slam", "Título: \(String(describing: title))")
+        let kinetic = RuleAgent.plan(for: "Faz um texto animado estilo katana escrito Asfalto novo", project: project)?.actions.first
+        precondition(kinetic?.tool == "motion" && kinetic?.kind == "katana" && kinetic?.text == "Asfalto novo", "Texto animado: \(String(describing: kinetic))")
+        let name = RuleAgent.plan(for: "Coloca uma tarja de nome da Maria Souza, moradora, em 10 segundos", project: project)?.actions.first
+        precondition(name?.kind == "tarja-nome" && name?.text?.hasPrefix("Maria Souza") == true && name?.time == 10, "Tarja: \(String(describing: name))")
+        precondition(RuleAgent.plan(for: "Deixa as imagens mais saturadas na trilha de vídeo", project: project)?.actions.first?.kind == "saturation", "Saturação")
+        precondition(RuleAgent.plan(for: "Coloca um zoom lento no clipe 2", project: project)?.actions.first?.clip == 2, "Zoom lento")
+        precondition(RuleAgent.direct(for: "tira o som do b-roll e coloca legenda neon", project: project) == nil, "Dois pedidos vão para a IA")
+        precondition(RuleAgent.direct(for: "legenda estilo MrBeast", project: project)?.actions.last?.kind == "mrbeast", "Pedido simples resolve na hora")
+        let obra = project.clips.sorted { $0.start < $1.start }.firstIndex { $0.label == "obra" }! + 1
+        let tolerant = AgentExecutor.apply(AgentPlan(reply: "", actions: [AgentAction(tool: "set_volume", track: "audio", value: 10), AgentAction(tool: "trim_start", clip: obra, time: 1)]), to: project, playhead: 0)
+        precondition(tolerant.project.clips.filter { $0.track == "audio" }.allSatisfy { abs($0.volume - 0.1) < 0.001 }, "10 vira 10%")
+        precondition(tolerant.done.contains { $0.contains("Início") }, "Corte aceita tempo no lugar de valor")
+        precondition(AgentProtocol.parsePlan(#"{"reply":"ok","actions":[{"tool":"set_volume","track":"broll","value":0}]}"#) != nil, "Exemplo do prompt é válido")
     }
 
     static func looksApply() {

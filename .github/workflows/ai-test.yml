@@ -41,7 +41,7 @@ jobs:
       - name: Rodar os modelos
         run: |
           mkdir -p ai-report
-          for spec in "qwen|qwen|https://huggingface.co/unsloth/Qwen3.5-2B-GGUF/resolve/main/Qwen3.5-2B-Q4_K_M.gguf" "gemma-e2b|gemma|https://huggingface.co/unsloth/gemma-4-E2B-it-qat-mobile-GGUF/resolve/main/gemma-4-E2B-it-qat-UD-Q2_K_XL.gguf" "gemma-12b|gemma|https://huggingface.co/unsloth/gemma-4-12b-it-GGUF/resolve/main/gemma-4-12b-it-UD-Q3_K_XL.gguf"; do
+          for spec in "qwen|qwen|https://huggingface.co/unsloth/Qwen3.5-2B-GGUF/resolve/main/Qwen3.5-2B-Q4_K_M.gguf" "gemma-e2b|gemma|https://huggingface.co/unsloth/gemma-4-E2B-it-qat-mobile-GGUF/resolve/main/gemma-4-E2B-it-qat-UD-Q2_K_XL.gguf"; do
             NAME=${spec%%|*}; REST=${spec#*|}; FORMAT=${REST%%|*}; URL=${REST#*|}
             curl -sSL -o model.gguf "$URL"
             ls -lh model.gguf

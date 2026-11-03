@@ -56,14 +56,10 @@ enum AgentProtocol {
         let toolNames = tools.map { "\"\\\"\($0)\\\"\"" }.joined(separator: " | ")
         return #"""
         root ::= "{" ws "\"reply\"" ws ":" ws string ws "," ws "\"actions\"" ws ":" ws "[" ws (action (ws "," ws action)*)? ws "]" ws "}"
-        action ::= "{" ws "\"tool\"" ws ":" ws tool (ws "," ws field)* ws "}"
-        field ::= intfield | numfield | strfield
-        intfield ::= "\"clip\"" ws ":" ws integer
-        numfield ::= ("\"time\"" | "\"value\"" | "\"duration\"") ws ":" ws number
-        strfield ::= ("\"track\"" | "\"text\"" | "\"kind\"") ws ":" ws string
+        action ::= "{" ws "\"tool\"" ws ":" ws tool (ws "," ws "\"clip\"" ws ":" ws integer)? (ws "," ws "\"track\"" ws ":" ws string)? (ws "," ws "\"time\"" ws ":" ws number)? (ws "," ws "\"value\"" ws ":" ws number)? (ws "," ws "\"duration\"" ws ":" ws number)? (ws "," ws "\"text\"" ws ":" ws string)? (ws "," ws "\"kind\"" ws ":" ws string)? ws "}"
         integer ::= "-"? [0-9]{1,6}
         number ::= "-"? [0-9]{1,6} ("." [0-9]{1,4})?
-        string ::= "\"" ([^"\\\x7F\x00-\x1F] | "\\" (["\\/bfnrt] | "u" [0-9a-fA-F]{4}))* "\""
+        string ::= "\"" ([^"\\\x7F\x00-\x1F] | "\\" (["\\/bfnrt] | "u" [0-9a-fA-F]{4})){0,220} "\""
         ws ::= [ \t\n]{0,4}
         """# + "\ntool ::= " + toolNames + "\n"
     }
@@ -71,7 +67,7 @@ enum AgentProtocol {
     static let systemPrompt = """
     Você é o assistente de edição do Editor IA, em um iPhone, sem internet. Fala português do Brasil.
     Responda SEMPRE em JSON: {"reply":"frase curta para o editor","actions":[...]}.
-    Cada ação tem "tool" e os campos necessários. Tempos em segundos. "clip" é o número do clipe na lista do projeto.
+    Cada ação tem "tool" e os campos necessários, nesta ordem: tool, clip, track, time, value, duration, text, kind. Tempos em segundos. "clip" é o número do clipe na lista do projeto. Volume e velocidade: 1 é normal, 0.1 é 10%.
 
     Ferramentas:
     split(clip,time) divide o clipe no tempo da timeline
@@ -102,12 +98,28 @@ enum AgentProtocol {
     - Mexa só no que foi pedido.
     - Se não souber, se faltar informação ou se o app não tiver a ferramenta, diga isso em "reply" e use "actions":[].
     - Pergunta sem pedido de edição: responda em "reply" com "actions":[].
+
+    Exemplos:
+    Pedido: tira o som do b-roll
+    {"reply":"B-roll sem som.","actions":[{"tool":"set_volume","track":"broll","value":0}]}
+    Pedido: abaixa a música para 20%
+    {"reply":"Música em 20%.","actions":[{"tool":"set_volume","track":"audio","value":0.2}]}
+    Pedido: corta 2 segundos do começo do clipe 3
+    {"reply":"Cortei 2 s do início do clipe 3.","actions":[{"tool":"trim_start","clip":3,"value":2}]}
+    Pedido: coloca o título Bem-vindos no começo com impacto
+    {"reply":"Título no início.","actions":[{"tool":"add_text","time":0,"duration":3,"text":"Bem-vindos","kind":"slam"}]}
+    Pedido: legenda estilo neon
+    {"reply":"Legenda neon.","actions":[{"tool":"caption_style","kind":"neon"}]}
+    Pedido: texto animado katana escrito Obra entregue aos 5 segundos
+    {"reply":"Texto animado no estilo Katana.","actions":[{"tool":"motion","time":5,"duration":3,"text":"Obra entregue","kind":"katana"}]}
+    Pedido: quanto dura o vídeo?
+    {"reply":"O vídeo tem 1 minuto e 32 segundos.","actions":[]}
     """
 
     static func formatPrompt(system: String, user: String, format: ChatFormat) -> String {
         switch format {
         case .gemma:
-            return "<|turn>system\n\(system)<turn|>\n<|turn>user\n\(user)<turn|>\n<|turn>model\n<|channel>thought\n<channel|>"
+            return "<|turn>system\n\(system)<turn|>\n<|turn>user\n\(user)<turn|>\n<|turn>model\n"
         case .qwen:
             return "<|im_start|>system\n\(system)<|im_end|>\n<|im_start|>user\n\(user)<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n"
         }
@@ -217,11 +229,11 @@ enum AgentExecutor {
                     outcome.project.clips = TimelineEditing.rippleDelete(clip.id, in: outcome.project.clips)
                     outcome.done.append("Clipe \(action.clip ?? 0) apagado e espaço fechado")
                 case "trim_start":
-                    outcome.project.clips[index] = TimelineEditing.trimStart(clip, by: action.value ?? 0, isStill: stillFlag(index))
+                    outcome.project.clips[index] = TimelineEditing.trimStart(clip, by: action.value ?? action.duration ?? action.time ?? 0, isStill: stillFlag(index))
                     outcome.done.append("Início do clipe \(action.clip ?? 0) aparado")
                 case "trim_end":
                     let media = outcome.project.media.first { $0.id == clip.mediaID }
-                    outcome.project.clips[index] = TimelineEditing.trimEnd(clip, by: -(action.value ?? 0), sourceDuration: media?.kind == "Imagem" ? nil : media?.duration)
+                    outcome.project.clips[index] = TimelineEditing.trimEnd(clip, by: -(action.value ?? action.duration ?? action.time ?? 0), sourceDuration: media?.kind == "Imagem" ? nil : media?.duration)
                     outcome.done.append("Fim do clipe \(action.clip ?? 0) aparado")
                 default:
                     outcome.project.clips[index] = TimelineEditing.setSpeed(clip, to: action.value ?? 1)
@@ -237,7 +249,9 @@ enum AgentExecutor {
                 outcome.done.append("Clipe \(action.clip ?? 0) movido para a trilha \(track)")
             case "set_volume":
                 let list = targets(action)
-                guard !list.isEmpty, let value = action.value else { outcome.blocked.append("set_volume: faltou alvo ou valor"); continue }
+                guard !list.isEmpty, var value = action.value else { outcome.blocked.append("set_volume: faltou alvo ou valor"); continue }
+                // "10" quer dizer 10%.
+                if value > 2 { value /= 100 }
                 for index in list { outcome.project.clips[index].volume = min(2, max(0, value)) }
                 outcome.done.append("Volume ajustado em \(list.count) clipe(s)")
             case "add_text":
@@ -501,10 +515,42 @@ enum MotionImport {
 
 /// Entende pedidos comuns sem modelo de IA, para o chat funcionar desde a primeira abertura.
 enum RuleAgent {
+    private static let verbs = ["coloca", "bota", "poe", "tira", "corta", "deixa", "faz", "muda", "aumenta", "abaixa", "adiciona", "remove", "aplica", "troca", "monta", "exporta", "acelera"]
+
+    /// Pedido simples, de uma coisa só: o app resolve na hora, sem esperar a IA.
+    static func direct(for request: String, project: EditorProject) -> AgentPlan? {
+        let text = fold(request)
+        let words = text.split(whereSeparator: { $0 == " " || $0 == "," })
+        let actions = words.filter { word in verbs.contains { word.hasPrefix($0) } }.count
+        guard actions <= 1, words.count <= 16 else { return nil }
+        return plan(for: request, project: project)
+    }
+
+    private static func fold(_ text: String) -> String {
+        text.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: Locale(identifier: "pt_BR"))
+    }
+
+    /// Primeiro trecho que casa com o padrão, procurando no texto original (com acentos).
+    private static func capture(_ pattern: String, in text: String) -> String? {
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]),
+              let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
+              match.numberOfRanges > 1, let range = Range(match.range(at: 1), in: text) else { return nil }
+        let value = text[range].trimmingCharacters(in: .whitespacesAndNewlines.union(CharacterSet(charactersIn: "\"“”'.,")))
+        return value.isEmpty ? nil : value
+    }
+
+    private static func number(_ pattern: String, in text: String) -> Double? {
+        capture(pattern, in: text).flatMap { Double($0.replacingOccurrences(of: ",", with: ".")) }
+    }
+
     static func plan(for request: String, project: EditorProject) -> AgentPlan? {
-        let text = request.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: Locale(identifier: "pt_BR"))
+        let text = fold(request)
         func has(_ words: String...) -> Bool { words.contains { text.contains($0) } }
         let percent = text.split(whereSeparator: { !$0.isNumber }).first.flatMap { Double($0) }
+        let clipNumber = number(#"clipe\s+(\d+)"#, in: text).map { Int($0) }
+        let atSeconds = number(#"(?:em|aos|no segundo|nos)\s+(\d+(?:[.,]\d+)?)\s*(?:s\b|seg)"#, in: text)
+        let quoted = capture(#"["“]([^"”]+)["”]"#, in: request)
+        let written = quoted ?? capture(#"(?:escrito|dizendo|escrevendo|com o texto|t[íi]tulo)\s+(.+?)(?:\s+(?:no|na|em|aos|com|logo|para)\s|,|$)"#, in: request)
 
         if has("desfaz", "desfazer", "volta como") { return AgentPlan(reply: "Desfazendo.", actions: [AgentAction(tool: "undo")]) }
         if has("exporta", "exportar") { return AgentPlan(reply: "Exportando na qualidade escolhida.", actions: [AgentAction(tool: "export")]) }
@@ -521,6 +567,22 @@ enum RuleAgent {
             if !project.media.contains(where: { !$0.transcript.isEmpty }) { actions.insert(AgentAction(tool: "transcribe"), at: 0) }
             return AgentPlan(reply: "Legenda \(preset.name) aplicada.", actions: actions)
         }
+        // Texto animado em um dos estilos de motion.
+        if has("texto animado", "motion", "animacao", "letreiro"), let written {
+            let style = MotionStyles.all.first { text.contains($0) } ?? "impacto"
+            return AgentPlan(reply: "Texto animado no estilo \(style).", actions: [AgentAction(tool: "motion", time: atSeconds ?? (has("inicio", "comeco") ? 0 : nil), duration: 3, text: written, kind: style)])
+        }
+        if has("tarja", "nome na tela", "lower third"), let name = quoted ?? capture(#"nome d[aoe]s?\s+(.+?)(?:\s+(?:em|aos|no|na)\s+\d|$)"#, in: request) ?? capture(#"tarja (?:d[aoe]s?|com)\s+(.+?)(?:\s+(?:em|aos|no|na)\s+\d|$)"#, in: request) {
+            return AgentPlan(reply: "Tarja de nome adicionada.", actions: [AgentAction(tool: "motion", time: atSeconds, duration: 4, text: name, kind: "tarja-nome")])
+        }
+        if has("titulo") || (has("escrito", "texto") && has("coloca", "bota", "poe", "adiciona")), let written {
+            let kind = has("impacto", "forte") ? "slam" : has("pula", "salta") ? "pop" : "fade"
+            return AgentPlan(reply: "Título adicionado.", actions: [AgentAction(tool: "add_text", time: atSeconds ?? (has("inicio", "comeco") ? 0 : nil), duration: 3, text: written, kind: kind)])
+        }
+        if has("corta", "tira", "remove", "apara"), has("segundo"), let clipNumber, let seconds = number(#"(\d+(?:[.,]\d+)?)\s*(?:primeiros\s+|ultimos\s+)?seg"#, in: text) {
+            let fromEnd = has("ultimos", "final", "fim")
+            return AgentPlan(reply: "Cortei \(Int(seconds)) s do \(fromEnd ? "fim" : "início") do clipe \(clipNumber).", actions: [AgentAction(tool: fromEnd ? "trim_end" : "trim_start", clip: clipNumber, value: seconds)])
+        }
         if has("broll", "b-roll", "b roll", "imagens de apoio") && has("tira o som", "sem som", "muda", "mudo") {
             return AgentPlan(reply: "B-roll sem som.", actions: [AgentAction(tool: "set_volume", track: "broll", value: 0)])
         }
@@ -534,12 +596,24 @@ enum RuleAgent {
                 return AgentPlan(reply: "Colocando música da biblioteca.", actions: [AgentAction(tool: "music", kind: mood)])
             }
         }
+        if has("saturad", "mais cor", "cores mais vivas") {
+            let value = has("menos", "dessatur") ? 0.7 : 1.3
+            return AgentPlan(reply: "Saturação ajustada.", actions: [AgentAction(tool: "set_color", clip: clipNumber, track: clipNumber == nil ? "video" : nil, value: value, kind: "saturation")])
+        }
+        if has("zoom lento", "zoom suave", "aproximando devagar") {
+            return AgentPlan(reply: "Zoom lento aplicado.", actions: [AgentAction(tool: "ken_burns", clip: clipNumber, track: clipNumber == nil ? "video" : nil)])
+        }
         if has("reenquadr", "reframe", "enquadr") { return AgentPlan(reply: "Reenquadrando.", actions: [AgentAction(tool: "reframe")]) }
         for look in ColorLooks.names where text.contains(look) && has("cor", "visual", "look", "deixa") {
             return AgentPlan(reply: "Aplicando o visual \(look).", actions: [AgentAction(tool: "look", track: "video", kind: look)])
         }
         return nil
     }
+}
+
+/// Estilos do texto animado, conhecidos também fora da interface.
+enum MotionStyles {
+    static let all = ["katana", "impacto", "mola", "cascata", "glitch", "giro3d", "contorno", "marca", "elegante", "maquina", "tremor", "motionia", "doismundos", "energia", "editorial"]
 }
 
 

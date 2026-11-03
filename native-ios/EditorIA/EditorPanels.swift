@@ -116,7 +116,9 @@ struct AIAssistantPanel: View {
     private func send(_ raw: String) {
         let request = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !request.isEmpty else { return }
-        if let model = models.activeModel {
+        if let plan = RuleAgent.direct(for: request, project: store.project) {
+            agent.addExchange(request: request, plan: plan)
+        } else if let model = models.activeModel {
             let summary = AgentProtocol.projectSummary(
                 store.project,
                 playhead: store.playhead,

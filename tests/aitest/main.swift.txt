@@ -47,6 +47,13 @@ let templates = (try? JSONDecoder().decode([MotionTemplate].self, from: Data(con
 for item in cases {
     let summary = AgentProtocol.projectSummary(project, playhead: 0, selectedClip: nil, motionTemplates: templates)
     let prompt = AgentProtocol.formatPrompt(system: AgentProtocol.systemPrompt, user: "\(summary)\n\nPedido do editor: \(item.request)", format: format)
+    // Como no app: pedido simples é resolvido na hora, sem a IA.
+    if let plan = RuleAgent.direct(for: item.request, project: project) {
+        let ok = item.check(plan, AgentExecutor.apply(plan, to: project, playhead: 0))
+        if ok { passed += 1 }
+        print("\(ok ? "OK  " : "FALHA") [na hora, sem IA] \(item.request) -> \(plan.actions.map(\.tool))")
+        continue
+    }
     let start = Date()
     do {
         let raw = try engine.generate(prompt: prompt, grammar: AgentProtocol.grammar, maximumTokens: 300)
