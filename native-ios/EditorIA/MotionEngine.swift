@@ -130,7 +130,11 @@ final class MotionEngine: NSObject, ObservableObject, WKNavigationDelegate {
             view.loadFileURL(page, allowingReadAccessTo: folder)
         }
         // Espera as fontes carregarem de verdade (evaluateJavaScript não espera promessas).
-        _ = try? await view.callAsyncJavaScript("if (document.fonts) { await document.fonts.ready; } return true;", arguments: [:], in: nil, contentWorld: .page)
+        for _ in 0..<30 {
+            let status = try? await view.evaluateJavaScript("document.fonts ? document.fonts.status : 'loaded'") as? String
+            if status == "loaded" { break }
+            try await Task.sleep(for: .milliseconds(100))
+        }
         try await Task.sleep(for: .milliseconds(120))
         lastDiagnostics = (try? await view.evaluateJavaScript(Self.diagnosticsScript) as? String) ?? "sem diagnóstico"
 

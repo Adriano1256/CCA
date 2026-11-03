@@ -616,11 +616,32 @@ enum RuleAgent {
     static func direct(for request: String, project: EditorProject) -> AgentPlan? {
         // Montagem no padrão, mesmo com ajustes no meio do pedido, é resolvida na hora.
         if AssemblyRequest.isAssembly(request), !fold(request).contains("stories") { return AssemblyRequest.plan(for: request) }
+        // Vários pedidos numa frase: se o app entende cada parte, faz tudo na hora; senão, vai para a IA.
+        let parts = clauses(request)
+        if parts.count > 1 {
+            var actions: [AgentAction] = []
+            var replies: [String] = []
+            for part in parts {
+                guard let plan = plan(for: part, project: project), !plan.actions.isEmpty else { return nil }
+                actions += plan.actions
+                replies.append(plan.reply)
+            }
+            return AgentPlan(reply: replies.joined(separator: " "), actions: actions)
+        }
         let text = fold(request)
         let words = text.split(whereSeparator: { $0 == " " || $0 == "," })
         let actions = words.filter { word in verbs.contains { word.hasPrefix($0) } }.count
         guard actions <= 1, words.count <= 16 else { return nil }
         return plan(for: request, project: project)
+    }
+
+    /// Separa "faz isso e depois coloca aquilo" em pedidos de uma coisa só.
+    static func clauses(_ request: String) -> [String] {
+        let pattern = #"(?:\s*[,;]\s*(?:e\s+)?(?:depois|tambem|também|ai|aí)?\s*|\s+e\s+(?:depois\s+|tambem\s+|também\s+|ai\s+|aí\s+)?)(?=(?:coloca|coloque|bota|tira|tire|corta|corte|deixa|deixe|faz|faça|faca|muda|mude|aumenta|abaixa|adiciona|remove|aplica|troca|poe|põe|acelera|exporta)\b)"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else { return [request] }
+        let marker = "\u{1F}"
+        let marked = regex.stringByReplacingMatches(in: request, range: NSRange(request.startIndex..., in: request), withTemplate: marker)
+        return marked.components(separatedBy: marker).map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
     }
 
     private static func fold(_ text: String) -> String {
@@ -691,6 +712,13 @@ enum RuleAgent {
             if has("coloca", "bota", "adiciona", "poe", "põe") {
                 let mood = LibraryItem.musicMoods.first { text.contains($0.folding(options: .diacriticInsensitive, locale: nil)) } ?? ""
                 return AgentPlan(reply: "Colocando música da biblioteca.", actions: [AgentAction(tool: "music", kind: mood)])
+            }
+        }
+        if has("camera lenta", "camara lenta", "metade da velocidade", "acelera", "mais rapido", "velocidade", "slow") {
+            var value: Double? = number(#"(\d+(?:[.,]\d+)?)\s*x\b"#, in: text)
+            if value == nil { value = has("metade", "camera lenta", "camara lenta", "slow") ? 0.5 : has("dobro", "acelera", "mais rapido") ? 2 : nil }
+            if let value {
+                return AgentPlan(reply: value < 1 ? "Câmera lenta aplicada." : "Clipe acelerado.", actions: [AgentAction(tool: "set_speed", clip: clipNumber, track: clipNumber == nil ? "broll" : nil, value: value)])
             }
         }
         if has("saturad", "mais cor", "cores mais vivas") {

@@ -470,7 +470,12 @@ enum SceneAndAgentTests {
         precondition(name?.kind == "tarja-nome" && name?.text?.hasPrefix("Maria Souza") == true && name?.time == 10, "Tarja: \(String(describing: name))")
         precondition(RuleAgent.plan(for: "Deixa as imagens mais saturadas na trilha de vídeo", project: project)?.actions.first?.kind == "saturation", "Saturação")
         precondition(RuleAgent.plan(for: "Coloca um zoom lento no clipe 2", project: project)?.actions.first?.clip == 2, "Zoom lento")
-        precondition(RuleAgent.direct(for: "tira o som do b-roll e coloca legenda neon", project: project) == nil, "Dois pedidos vão para a IA")
+        let both = RuleAgent.direct(for: "Tira o som do B-roll e depois coloca uma legenda neon", project: project)
+        precondition(both?.actions.map(\.tool) == ["set_volume", "transcribe", "caption_style"], "Dois pedidos entendidos: \(String(describing: both?.actions.map(\.tool)))")
+        let slowTitle = RuleAgent.direct(for: "Deixa o clipe 2 em câmera lenta pela metade da velocidade e coloca um título Obra Entregue aos 20 segundos", project: project)
+        precondition(slowTitle?.actions.first?.tool == "set_speed" && slowTitle?.actions.first?.value == 0.5 && slowTitle?.actions.last?.text == "Obra Entregue" && slowTitle?.actions.last?.time == 20, "Câmera lenta e título: \(String(describing: slowTitle?.actions))")
+        precondition(RuleAgent.clauses("coloca o título Arroz e Feijão no começo").count == 1, "Título com e não é dividido")
+        precondition(RuleAgent.direct(for: "tira o som do b-roll e faz a imagem voar pela lua", project: project) == nil, "Parte que o app não entende vai para a IA")
         let breu = RuleAgent.direct(for: "Edite esse vídeo de acordo com o padrão do Breu Branco, mas deixa 15 segundos de imagem de apoio e aí entra a primeira fala", project: project)!
         precondition(breu.actions.first?.tool == "set_client" && breu.actions.first?.text == "Breu Branco", "Cliente pelo nome")
         precondition(breu.actions.last?.tool == "assemble" && breu.actions.last?.value == 15, "Abertura de 15 s: \(breu.actions)")
