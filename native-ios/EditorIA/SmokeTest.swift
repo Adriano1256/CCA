@@ -232,13 +232,15 @@ enum SmokeTest {
     private static func race<T>(_ work: @escaping @MainActor () async throws -> T, onTimeout: @escaping @MainActor () -> Void) async throws -> T {
         try await withCheckedThrowingContinuation { continuation in
             let once = Once(continuation)
-            Task { @MainActor in
-                do { once.finish(.success(try await work())) } catch { once.finish(.failure(error)) }
-            }
-            Task { @MainActor in
-                try? await Task.sleep(for: .seconds(180))
+            // O relógio para quando a exportação termina; antes ele continuava e cancelava a exportação seguinte.
+            let timer = Task { @MainActor in
+                do { try await Task.sleep(for: .seconds(240)) } catch { return }
                 onTimeout()
                 once.finish(.failure(Timeout()))
+            }
+            Task { @MainActor in
+                do { once.finish(.success(try await work())) } catch { once.finish(.failure(error)) }
+                timer.cancel()
             }
         }
     }
