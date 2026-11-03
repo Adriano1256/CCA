@@ -2,15 +2,13 @@
 
 Um app de iPhone só pode ser compilado em um Mac. Como você usa Windows, o GitHub compila em um Mac na nuvem e entrega o arquivo `EditorIA.ipa`. O Sideloadly instala esse arquivo pelo cabo USB.
 
-## 1. Gerar o IPA
+## 1. Baixar o IPA
 
-1. Crie um repositório vazio e privado no GitHub chamado `editor-ia-studio`.
-2. Envie este projeto para a branch `main`. Isso inicia o processo "Gerar app para iPhone" na aba **Actions**, que leva alguns minutos.
-3. Ao terminar, baixe o `EditorIA.ipa` na página **Releases** do repositório.
+O arquivo é gerado sozinho na nuvem a cada atualização. Baixe sempre o mais novo em:
 
-Se o processo ficar vermelho, o erro está no arquivo `build-device.log`, dentro do resultado do processo.
+https://github.com/Adriano1256/CCA/releases/latest
 
-Custo: em repositório privado, o plano gratuito dá 2.000 minutos por mês e cada minuto de Mac consome 10. São cerca de 200 minutos reais de Mac por mês. Em repositório público é grátis.
+Clique em `EditorIA.ipa` para baixar.
 
 ## 2. Preparar o PC (uma vez só)
 
@@ -37,3 +35,15 @@ Se travar na assinatura: feche o iTunes por completo e renomeie a pasta `C:\Prog
 ## Depois de instalar
 
 Os vídeos exportados ficam no botão de exportar (Compartilhar ou Salvar na Fototeca) e no app **Arquivos**, em Neste iPhone > Editor IA.
+
+## Primeiro uso
+
+1. Abra o app e toque em **+** para importar os vídeos (Arquivos ou Fototeca), na ordem em que foram gravados.
+2. O app analisa o material sozinho: fala, música, batidas e transcrição.
+3. Abra a aba **Chat** e peça. Exemplos: "edita no padrão do Breu Branco", "deixa 15 segundos de B-roll antes da primeira fala", "legenda estilo MrBeast", "tira o som do B-roll e coloca legenda neon".
+4. Para pedidos livres, baixe um modelo de IA uma vez, com Wi-Fi: Chat > Modelos. No iPhone 17 Pro Max o recomendado é o Gemma 4 12B. Baixe também o Whisper para transcrever em português.
+5. Exporte pelo botão de compartilhar, escolhendo qualidade, resolução e quadros por segundo.
+
+## O que ainda não foi testado no iPhone de verdade
+
+Tudo foi testado na nuvem, em simulador, mas não em um iPhone real: a velocidade da IA, o Gemma 4 12B, o Whisper e a exportação com a placa de vídeo do aparelho. Se algo falhar, me conte o que apareceu na tela.
