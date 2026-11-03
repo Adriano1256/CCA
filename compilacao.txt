@@ -1,0 +1,19 @@
+Fetching https://github.com/mattt/llama.swift
+[1/7534] Fetching llama.swift
+Fetched https://github.com/mattt/llama.swift from cache (0.70s)
+Computing version for https://github.com/mattt/llama.swift
+Computed https://github.com/mattt/llama.swift at 2.10549.0 (1.20s)
+Creating working copy for https://github.com/mattt/llama.swift
+Working copy of https://github.com/mattt/llama.swift resolved at 2.10549.0
+Downloading binary artifact https://github.com/ggml-org/llama.cpp/releases/download/b10549/llama-b10549-xcframework.zip
+[5503/79011953] Downloading https://github.com/ggml-org/llama.cpp/releases/download/b10549/llama-b10549-xcframework.zip
+Downloaded https://github.com/ggml-org/llama.cpp/releases/download/b10549/llama-b10549-xcframework.zip (6.26s)
+Building for production...
+[0/6] Write sources
+[2/6] Copying llama.framework
+[3/6] Write swift-version--79AA4F9932D1E87A.txt
+[5/7] Compiling LlamaSwift Llama.swift
+[6/8] Compiling aitest AgentCore.swift
+[6/8] Write Objects.LinkFileList
+[7/8] Linking aitest
+Build complete! (24.91s)

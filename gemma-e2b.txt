@@ -1,0 +1,24 @@
+Modelo carregado em 2.1 s
+OK   [na hora, sem IA] Tira o som do B-roll -> ["set_volume"]
+OK   [na hora, sem IA] Abaixa a música para 10% -> ["set_volume"]
+OK   [na hora, sem IA] Coloca o título Asfalto Novo no início com efeito de impacto -> ["add_text"]
+OK   [na hora, sem IA] Corta os 3 primeiros segundos do clipe 1 -> ["trim_start"]
+OK   [179s] Corta a fala do morador pela metade
+      -> {"reply": "A fala do morador será cortada pela metade.", "actions": [{"tool": "trim_start", "clip": 1, "value": 0.5}, {"tool": "trim_start", "clip": 1, "value": 0.5, "duration": 0.5}] }
+      bloqueado: []
+OK   [na hora, sem IA] Deixa as imagens mais saturadas na trilha de vídeo -> ["set_color"]
+OK   [na hora, sem IA] Coloca um zoom lento no clipe 4 -> ["ken_burns"]
+OK   [na hora, sem IA] Coloca uma tarja de nome da Maria Souza, moradora, em 10 segundos -> ["add_text"]
+OK   [na hora, sem IA] Monta o vídeo institucional -> ["assemble"]
+OK   [na hora, sem IA] Edita no padrão do Breu Branco, mas deixa 15 segundos de imagem de apoio antes da primeira fala -> ["set_client", "assemble"]
+OK   [na hora, sem IA] Tira o som do B-roll e depois coloca uma legenda neon -> ["set_volume", "transcribe", "caption_style"]
+OK   [na hora, sem IA] Deixa o clipe 2 em câmera lenta pela metade da velocidade e coloca um título Obra Entregue aos 20 segundos -> ["set_speed", "add_text"]
+OK   [na hora, sem IA] Coloca legenda estilo MrBeast -> ["transcribe", "caption_style"]
+OK   [na hora, sem IA] Quero uma legenda neon -> ["transcribe", "caption_style"]
+FALHA [208s] Faz essa imagem voar pela lua em 3D com raios laser
+      -> {"reply": "A imagem que você descreve é uma imagem complexa que envolve elementos visuais e sonoros, mas a descrição fornecida é muito técnica e ambígua. Para criar uma imagem 3D com raios laser, você precisaria de um software de 3",  "actions": [   {"tool": "set_volume", "track": "audio", "value": 0.0},   {"tool": "set_volume", "track": "video", "value": 0.0},   {"tool": "set_volume", "track": "audio", "value": 0.0},   {"tool": "set_volume", "track": "video", "value": 0.0} ]}
+      bloqueado: []
+FALHA [176s] Quanto tempo tem o vídeo?
+      -> {"reply": "O vídeo tem 38 segundos.", "actions": []}
+      bloqueado: []
+RESULTADO: 14 de 16
